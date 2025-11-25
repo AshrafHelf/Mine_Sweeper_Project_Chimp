@@ -140,15 +140,28 @@ public class BoardView extends JPanel {
                             btn.setForeground(Color.WHITE);
                         }
                         case SURPRISE -> {
-                            btn.setText("S");
-                            btn.setBackground(new Color(186, 85, 211));
-                            btn.setForeground(Color.WHITE);
+                            if (cell.isUsedSpecial()) {
+                                btn.setText("USED");
+                                btn.setBackground(new Color(90, 90, 90));
+                                btn.setForeground(Color.WHITE);
+                            } else {
+                                btn.setText("S");
+                                btn.setBackground(new Color(186, 85, 211));
+                                btn.setForeground(Color.WHITE);
+                            }
                         }
                         case QUESTION -> {
-                            btn.setText("Q");
-                            btn.setBackground(new Color(255, 215, 0));
-                            btn.setForeground(Color.BLACK);
+                            if (cell.isUsedSpecial()) {
+                                btn.setText("USED");
+                                btn.setBackground(new Color(90, 90, 90));
+                                btn.setForeground(Color.WHITE);
+                            } else {
+                                btn.setText("Q");
+                                btn.setBackground(new Color(255, 215, 0));
+                                btn.setForeground(Color.BLACK);
+                            }
                         }
+
                     }
                 }
             }

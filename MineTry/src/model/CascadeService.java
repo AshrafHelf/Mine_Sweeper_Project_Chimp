@@ -1,57 +1,57 @@
 package model;
 
 import java.util.ArrayDeque;
-import java.util.Deque;
-
-import model.Board;
-import model.Cell;
-import model.CellType;
+import java.util.Queue;
 
 public class CascadeService {
 
-    public void cascadeReveal(Board board, int c, int r) {
-        if (!board.inBounds(c, r)) {
-            return;
-        }
+    /**
+     * Reveal empty-area cells starting from (startCol, startRow).
+     * Expands through EMPTY cells and reveals any non-mine neighbors:
+     *  - NUMBER
+     *  - QUESTION
+     *  - SURPRISE
+     * Mines are never revealed by cascade.
+     */
+    public void cascadeReveal(Board board, int startCol, int startRow) {
+        int rows = board.getRows();
+        int cols = board.getCols();
 
-        Cell start = board.get(c, r);
-        if (start.isRevealed() || start.getType() == CellType.MINE) {
-            // If already revealed or a mine, just reveal it and stop
-            start.setRevealed(true);
-            return;
-        }
+        boolean[][] visited = new boolean[rows][cols];
+        Queue<Coordinate> queue = new ArrayDeque<>();
 
-        // Queue will hold coordinates [col, row]
-        Deque<int[]> q = new ArrayDeque<>();
-        q.add(new int[]{c, r});
+        queue.add(new Coordinate(startCol, startRow));
 
-        while (!q.isEmpty()) {
-            int[] pos = q.removeFirst();
-            int cc = pos[0];
-            int rr = pos[1];
+        while (!queue.isEmpty()) {
+            Coordinate cur = queue.remove();
+            int c = cur.col();
+            int r = cur.row();
 
-            if (!board.inBounds(cc, rr)) continue;
+            if (!board.inBounds(c, r)) continue;
+            if (visited[r][c]) continue;
+            visited[r][c] = true;
 
-            Cell cell = board.get(cc, rr);
-            if (cell.isRevealed()) continue;
+            Cell cell = board.get(c, r);
 
+            // skip if already revealed or flagged
+            if (cell.isRevealed() || cell.isFlagged()) continue;
+
+            // never auto-reveal mines
+            if (cell.getType() == CellType.MINE) continue;
+
+            // reveal any NON-MINE cell (EMPTY, NUMBER, QUESTION, SURPRISE)
             cell.setRevealed(true);
 
-            // Only expand from EMPTY cells (0 adjacent mines)
+            // if EMPTY, expand to neighbors
             if (cell.getType() == CellType.EMPTY) {
                 for (int dr = -1; dr <= 1; dr++) {
                     for (int dc = -1; dc <= 1; dc++) {
-                        if (dc == 0 && dr == 0) continue;
+                        if (dr == 0 && dc == 0) continue;
+                        int nc = c + dc;
+                        int nr = r + dr;
 
-                        int nc = cc + dc;
-                        int nr = rr + dr;
-
-                        if (board.inBounds(nc, nr)) {
-                            Cell neigh = board.get(nc, nr);
-
-                            if (!neigh.isRevealed() && neigh.getType() != CellType.MINE) {
-                                q.add(new int[]{nc, nr});
-                            }
+                        if (board.inBounds(nc, nr) && !visited[nr][nc]) {
+                            queue.add(new Coordinate(nc, nr));
                         }
                     }
                 }

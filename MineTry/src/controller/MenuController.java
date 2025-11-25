@@ -1,10 +1,10 @@
 package controller;
 
+import model.Difficulty;
+import model.Game;
 import model.GameEngine;
 import model.HistoryService;
 import model.QuestionService;
-
-import model.Difficulty;
 import view.GamePanel;
 import view.MainWindow;
 
@@ -15,7 +15,10 @@ public class MenuController {
     private final QuestionService qService;
     private final HistoryService hService;
 
-    public MenuController(MainWindow view, GameEngine engine, QuestionService qService, HistoryService hService) {
+    public MenuController(MainWindow view,
+                          GameEngine engine,
+                          QuestionService qService,
+                          HistoryService hService) {
         this.view = view;
         this.engine = engine;
         this.qService = qService;
@@ -25,16 +28,20 @@ public class MenuController {
 
     private void wire() {
         // When user presses "Start Game" in the main menu:
-        view.onNewGame((difficulty, p1, p2) -> {
-            var game = engine.newGame(difficulty, p1, p2);
-            GamePanel panel = view.showGame(game);   // show the game screen
-            new GameController(panel, engine, game); // connect controller to this game
+        view.onNewGame((Difficulty difficulty, String p1, String p2) -> {
+            Game game = engine.newGame(difficulty, p1, p2);
+
+            // Show game panel
+            GamePanel panel = view.showGame(game);
+
+            // PASS MainWindow + QuestionService to GameController
+            new GameController(panel, engine, game, view, qService);
         });
 
-        // Top menu: Questions admin (for later)
-        view.onOpenQuestions(() -> view.showQuestionAdmin());
+        // Top menu: open question admin
+        view.onOpenQuestions(() -> view.showQuestionAdmin(qService));
 
-        // Top menu: History (scores)
+        // Top menu: open game history
         view.onOpenHistory(() -> view.showHistory(hService.all()));
     }
 }

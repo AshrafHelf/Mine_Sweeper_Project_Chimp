@@ -8,6 +8,8 @@ public class Cell {
 
     private boolean revealed;
     private boolean flagged;
+    private boolean usedSpecial; // for SURPRISE / QUESTION cells
+
 
     public Cell(Coordinate at, CellType type, int adjacentMines) {
         this.type = type;
@@ -15,6 +17,7 @@ public class Cell {
         this.adjacentMines = adjacentMines;
         this.revealed = false;
         this.flagged = false;
+        this.usedSpecial = false;
     }
 
     public CellType getType() {
@@ -47,4 +50,13 @@ public class Cell {
     public void setFlagged(boolean flagged) {
         this.flagged = flagged;
     }
+    
+    public boolean isUsedSpecial() {
+        return usedSpecial;
+    }
+
+    public void setUsedSpecial(boolean usedSpecial) {
+        this.usedSpecial = usedSpecial;
+    }
+
 }

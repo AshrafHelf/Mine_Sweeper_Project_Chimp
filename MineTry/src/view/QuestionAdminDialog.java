@@ -4,16 +4,27 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
+import model.Question;
+import model.QuestionLevel;
+import model.QuestionService;
+
 import java.awt.*;
+import java.util.List;
 
 public class QuestionAdminDialog extends JDialog {
 
     private JTable table;
     private JButton addBtn, editBtn, deleteBtn, closeBtn;
 
-    public QuestionAdminDialog(JFrame owner) {
+    private final QuestionService qService;
+
+    public QuestionAdminDialog(JFrame owner, QuestionService qService) {
         super(owner, "Question Management", true);
+        this.qService = qService;
+
         buildUI();
+        loadQuestionsIntoTable();
+
         pack();
         setLocationRelativeTo(owner);
         setMinimumSize(new Dimension(800, 450));
@@ -32,7 +43,7 @@ public class QuestionAdminDialog extends JDialog {
         title.setFont(title.getFont().deriveFont(Font.BOLD, 20f));
         title.setForeground(new Color(235, 235, 255));
 
-        JLabel subtitle = new JLabel("Manage questions used in Q-cells (add / edit / delete).");
+        JLabel subtitle = new JLabel("Manage questions used in Q-cells (read-only for now).");
         subtitle.setForeground(new Color(180, 185, 210));
         subtitle.setFont(subtitle.getFont().deriveFont(13f));
 
@@ -45,13 +56,12 @@ public class QuestionAdminDialog extends JDialog {
         titleBar.add(titleTexts, BorderLayout.WEST);
         getContentPane().add(titleBar, BorderLayout.NORTH);
 
-        // ===== Center: table =====
+        // ===== Table =====
         String[] cols = {"ID", "Question Text", "Difficulty", "Correct Answer"};
-        // placeholder empty model – real data will come from service later
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return false; // read-only (Iteration 1 requirement)
             }
         };
 
@@ -64,13 +74,11 @@ public class QuestionAdminDialog extends JDialog {
         table.setForeground(new Color(230, 230, 245));
         table.setSelectionBackground(new Color(60, 80, 140));
         table.setSelectionForeground(Color.WHITE);
-        table.setGridColor(new Color(30, 40, 80));
 
         JTableHeader header = table.getTableHeader();
         header.setBackground(new Color(27, 36, 78));
         header.setForeground(Color.WHITE);
         header.setFont(header.getFont().deriveFont(Font.BOLD, 13f));
-        header.setReorderingAllowed(false);
 
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createEmptyBorder());
@@ -80,10 +88,9 @@ public class QuestionAdminDialog extends JDialog {
         center.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
         center.setBackground(new Color(12, 16, 35));
         center.add(scroll, BorderLayout.CENTER);
-
         getContentPane().add(center, BorderLayout.CENTER);
 
-        // ===== Right: action buttons =====
+        // ===== Side buttons (disabled for Iteration 1) =====
         JPanel right = new JPanel();
         right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
         right.setBorder(BorderFactory.createEmptyBorder(16, 10, 16, 16));
@@ -101,6 +108,11 @@ public class QuestionAdminDialog extends JDialog {
             b.setFocusPainted(false);
         }
 
+        // Iteration 1: disable buttons (not required yet)
+        addBtn.setEnabled(false);
+        editBtn.setEnabled(false);
+        deleteBtn.setEnabled(false);
+
         right.add(addBtn);
         right.add(Box.createVerticalStrut(10));
         right.add(editBtn);
@@ -111,14 +123,23 @@ public class QuestionAdminDialog extends JDialog {
 
         getContentPane().add(right, BorderLayout.EAST);
 
-        // ===== Bottom hint =====
-        JLabel hint = new JLabel("Tip: double-click a row to quickly preview the full question.");
-        hint.setBorder(BorderFactory.createEmptyBorder(4, 16, 8, 16));
-        hint.setForeground(new Color(160, 165, 190));
-        hint.setFont(hint.getFont().deriveFont(11f));
-        getContentPane().add(hint, BorderLayout.SOUTH);
-
-        // --- Actions (only close is functional for now) ---
         closeBtn.addActionListener(e -> dispose());
+    }
+
+    // ===== LOAD QUESTIONS FROM SERVICE =====
+    private void loadQuestionsIntoTable() {
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        model.setRowCount(0); // clear existing rows
+
+        List<Question> questions = qService.getAll();
+
+        for (Question q : questions) {
+            model.addRow(new Object[]{
+                    q.getId(),
+                    q.getText(),
+                    q.getLevel().name(),
+                    q.getOptions().get(q.getCorrectIndex())
+            });
+        }
     }
 }

@@ -5,6 +5,7 @@ import javax.swing.*;
 import model.Difficulty;
 import model.Game;
 import model.GameRecord;
+import model.QuestionService;
 
 import java.awt.*;
 import java.util.List;
@@ -173,10 +174,11 @@ public class MainWindow extends JFrame {
         return gamePanel;
     }
 
-    public void showQuestionAdmin() {
-        QuestionAdminDialog dialog = new QuestionAdminDialog(this);
+    public void showQuestionAdmin(QuestionService qService) {
+        QuestionAdminDialog dialog = new QuestionAdminDialog(this, qService);
         dialog.setVisible(true);
     }
+
 
     public void showHistory(List<GameRecord> records) {
         HistoryDialog dialog = new HistoryDialog(this, records);
