@@ -515,7 +515,13 @@ public class GameEngine {
         revealAllBoards(game);
 
         game.setState(GameState.OVER);
+
+        // 🔹 NEW: record the game in history
+        if (history != null) {
+            history.recordGame(game);
+        }
     }
+
 
     private void revealAllBoards(Game game) {
         revealAllOnBoard(game.getBoard1());

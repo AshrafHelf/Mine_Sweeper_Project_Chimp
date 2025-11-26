@@ -7,40 +7,37 @@ import model.Difficulty;
 import model.Game;
 import model.GameEngine;
 import model.GameState;
+import model.Question;
 import model.QuestionLevel;
+import model.QuestionService;
 import view.GameOverDialog;
 import view.GamePanel;
 import view.MainWindow;
-import model.Question;
-import model.QuestionService;
-import view.QuestionAdminDialog;
-
+import view.QuestionDialog;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class GameController {
 
-	private final GamePanel view;
-	private final GameEngine engine;
-	private final Game game;
-	private final MainWindow window;
-	private final QuestionService questionService;
+    private final GamePanel view;
+    private final GameEngine engine;
+    private final Game game;
+    private final MainWindow window;
+    private final QuestionService questionService;
 
-
-	public GameController(GamePanel view,
-            GameEngine engine,
-            Game game,
-            MainWindow window,
-            QuestionService questionService) {
-this.view = view;
-this.engine = engine;
-this.game = game;
-this.window = window;
-this.questionService = questionService;
-wire();
-}
-
+    public GameController(GamePanel view,
+                          GameEngine engine,
+                          Game game,
+                          MainWindow window,
+                          QuestionService questionService) {
+        this.view = view;
+        this.engine = engine;
+        this.game = game;
+        this.window = window;
+        this.questionService = questionService;
+        wire();
+    }
 
     private void wire() {
 
@@ -48,7 +45,9 @@ wire();
         view.onBackToMenu(this::requestBackToMenu);
         view.onRestart(this::requestRestart);
 
-        // LEFT CLICK = reveal or activate
+        // ==========================
+        // LEFT CLICK = reveal/activate
+        // ==========================
         view.onCellReveal((c, r) -> {
             if (game.getState() != GameState.RUNNING) return;
 
@@ -58,63 +57,80 @@ wire();
             Cell cell = board.get(c, r);
             if (cell.isFlagged()) return;
 
-            // =============================
-            // FIRST CLICK → reveal normally
-            // =============================
+            // ---- FIRST CLICK: not revealed yet → normal reveal in engine ----
             if (!cell.isRevealed()) {
                 engine.reveal(game, c, r);
 
                 if (game.getState() == GameState.RUNNING) {
                     game.swapTurn();
                 }
+            }
 
-            // =============================
-            // SECOND CLICK → activate S/Q
-            // =============================
-            } else {
+            // ---- SECOND CLICK: already revealed ----
+            else {
+                // If special tile already used, do nothing
+                if (cell.isUsedSpecial()) {
+                    view.refreshFromModel();
+                    return;
+                }
 
                 switch (cell.getType()) {
+                    case SURPRISE -> {
+                        // activate surprise (good/bad heart + points)
+                        engine.activateSurprise(game, c, r);
 
-                case SURPRISE -> {
-                    engine.activateSurprise(game, c, r);
-
-                    if (game.getState() == GameState.RUNNING) {
-                        game.swapTurn();
-                    }
-                }
-                case QUESTION -> {
-                    // Reveal the cell
-                    cell.setRevealed(true);
-
-                    // TEMPORARY: simulate a correct answer for testing
-                    boolean correct = true;
-                    QuestionLevel level = QuestionLevel.EASY;  // TEMP: change later when dialog works
-
-                    // Apply the scoring & hearts logic
-                    engine.activateQuestion(game, cell, level, correct);
-
-                    if (game.getState() == GameState.RUNNING) {
-                        game.swapTurn();
+                        if (game.getState() == GameState.RUNNING) {
+                            game.swapTurn();
+                        }
                     }
 
-                    view.refreshFromModel();
-                }
+                    case QUESTION -> {
+                        // 1) pick a question level (here: random among 4)
+                        QuestionLevel level = randomQuestionLevel();
 
+                        // 2) choose a random question for that level
+                        var maybeQ = questionService.random(level);
+                        if (maybeQ.isEmpty()) {
+                            JOptionPane.showMessageDialog(window,
+                                    "No questions available for level " + level,
+                                    "No Questions",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            break;
+                        }
 
+                        Question q = maybeQ.get();
+
+                        // 3) show dialog, get result
+                        QuestionDialog dialog = new QuestionDialog(window, q);
+                        Boolean correct = dialog.showAndGetResult();
+
+                        // user cancelled → don't use tile, don't swap turn
+                        if (correct == null) {
+                            break;
+                        }
+
+                        // 4) apply scoring & hearts via GameEngine
+                        engine.activateQuestion(game, cell, q.getLevel(), correct);
+
+                        if (game.getState() == GameState.RUNNING) {
+                            game.swapTurn();
+                        }
+                    }
 
                     default -> {
-                        // Clicking revealed normal cells does nothing
-                        return;
+                        // clicking revealed normal cells does nothing
                     }
                 }
             }
 
-            // Update view
+            // Update view and maybe show game-over dialog
             view.refreshFromModel();
             showGameOverIfNeeded();
         });
 
-        // RIGHT CLICK = flag
+        // ==========================
+        // RIGHT CLICK = flag / unflag
+        // ==========================
         view.onCellFlag((c, r) -> {
             if (game.getState() != GameState.RUNNING) return;
 
@@ -123,13 +139,13 @@ wire();
             showGameOverIfNeeded();
         });
     }
-    
+
+    // Random question level 1 of {EASY, MEDIUM, HARD, EXPERT}
     private QuestionLevel randomQuestionLevel() {
         QuestionLevel[] levels = QuestionLevel.values();
         int idx = model.Rng.current().nextInt(levels.length);
         return levels[idx];
     }
-
 
     // -------------------------
     // NAVIGATION
@@ -149,10 +165,9 @@ wire();
         String p2 = game.getPlayer2().getName();
 
         Game newGame = engine.newGame(diff, p1, p2);
-
         GamePanel newPanel = window.showGame(newGame);
 
-        new GameController(newPanel, engine, newGame, window , questionService);
+        new GameController(newPanel, engine, newGame, window, questionService);
     }
 
     // -------------------------

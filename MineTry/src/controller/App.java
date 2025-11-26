@@ -1,36 +1,44 @@
 package controller;
 
-
-
 import model.*;
-
-import controller.MenuController;
 import view.MainWindow;
 
 import javax.swing.*;
 
-
 public class App {
-public static void main(String[] args) {
-SwingUtilities.invokeLater(() -> {
-// Bootstrap (very light DI)
-var sysData = SysData.getInstance();
-var questionRepo = new CsvQuestionRepository("data/questions.csv");
-var historyRepo = new FileHistoryRepository("data/history.csv");
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            // ===== Bootstrap (very light DI) =====
+            SysData sysData = SysData.getInstance();
 
+            // Repos (file-based)
+            QuestionRepository questionRepo = new CsvQuestionRepository("data/Questions.csv");
+            HistoryRepository historyRepo = new FileHistoryRepository("data/history.csv");
 
-var questionService = new QuestionService(questionRepo, sysData);
-var boardGenerator = new BoardGenerator();
-var scoringService = new ScoringService();
-var turnService = new TurnService();
-var cascadeService = new CascadeService();
-var historyService = new HistoryService(historyRepo);
-var gameEngine = new GameEngine(boardGenerator, cascadeService, scoringService, turnService, historyService);
+            // Services
+            QuestionService questionService = new QuestionService(questionRepo, sysData);
+            BoardGenerator boardGenerator   = new BoardGenerator();
+            ScoringService scoringService   = new ScoringService();
+            TurnService turnService         = new TurnService();
+            CascadeService cascadeService   = new CascadeService();
+            HistoryService historyService   = new HistoryService(historyRepo);
+            GameEngine gameEngine           = new GameEngine(
+                    boardGenerator,
+                    cascadeService,
+                    scoringService,
+                    turnService,
+                    historyService
+            );
 
+            // Load initial data into SysData (optional but nice)
+            sysData.setQuestions(questionRepo.findAll());
+            // If you want history cached as well:
+            // sysData.setHistory(historyService.all());
 
-var mainWindow = new MainWindow();
-new MenuController(mainWindow, gameEngine, questionService, historyService);
-mainWindow.setVisible(true);
-});
-}
+            // UI
+            MainWindow mainWindow = new MainWindow();
+            new MenuController(mainWindow, gameEngine, questionService, historyService);
+            mainWindow.setVisible(true);
+        });
+    }
 }
