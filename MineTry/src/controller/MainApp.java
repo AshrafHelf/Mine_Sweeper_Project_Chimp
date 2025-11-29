@@ -5,7 +5,7 @@ import view.MainWindow;
 
 import javax.swing.*;
 
-public class App {
+public class MainApp {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             // ===== Bootstrap (very light DI) =====

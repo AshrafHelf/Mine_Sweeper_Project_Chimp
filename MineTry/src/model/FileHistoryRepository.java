@@ -4,6 +4,10 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
 
 public class FileHistoryRepository implements HistoryRepository {
 
@@ -54,26 +58,43 @@ public class FileHistoryRepository implements HistoryRepository {
 
     private void loadAllFromDisk() {
         cache.clear();
-        try (BufferedReader br = Files.newBufferedReader(path)) {
-            String line;
-            boolean first = true;
-            while ((line = br.readLine()) != null) {
-                if (first) { // skip header
-                    first = false;
-                    continue;
-                }
-                if (line.isBlank()) continue;
-                try {
-                    GameRecord rec = GameRecord.fromCsvLine(line);
-                    cache.add(rec);
-                } catch (Exception ex) {
-                    System.err.println("Bad history row, skipping: " + line);
+
+        try (InputStream in = getClass().getResourceAsStream("/history.csv")) {
+
+            if (in == null) {
+                throw new IllegalStateException("history.csv not found inside JAR");
+            }
+
+            try (BufferedReader br =
+                         new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+
+                String line;
+                boolean first = true;
+
+                while ((line = br.readLine()) != null) {
+                    // skip header
+                    if (first) {
+                        first = false;
+                        continue;
+                    }
+
+                    if (line.isBlank()) continue;
+
+                    try {
+                        GameRecord rec = GameRecord.fromCsvLine(line);
+                        cache.add(rec);
+                    } catch (Exception ex) {
+                        System.err.println("Bad history row, skipping: " + line);
+                    }
                 }
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+
 
     private void appendToFile(GameRecord record) {
         try (BufferedWriter bw = Files.newBufferedWriter(path,

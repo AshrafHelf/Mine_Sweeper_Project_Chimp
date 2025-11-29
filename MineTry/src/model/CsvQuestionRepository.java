@@ -8,6 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
+
 
 public class CsvQuestionRepository implements QuestionRepository {
 
@@ -59,27 +64,38 @@ public class CsvQuestionRepository implements QuestionRepository {
     private void loadAll() {
         cache.clear();
 
-        try (BufferedReader br = Files.newBufferedReader(csvPath)) {
-            String line;
-            boolean first = true;
+        try (InputStream in =
+                     CsvQuestionRepository.class.getResourceAsStream("/Questions.csv")) {
 
-            while ((line = br.readLine()) != null) {
-                // skip header
-                if (first) {
-                    first = false;
-                    continue;
-                }
-                if (line.isBlank()) continue;
+            if (in == null) {
+                throw new IllegalStateException("Questions.csv not found inside JAR");
+            }
 
-                Question q = parseLine(line);
-                if (q != null) {
-                    cache.add(q);
+            try (BufferedReader br =
+                         new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+
+                String line;
+                boolean first = true;
+
+                while ((line = br.readLine()) != null) {
+                    // skip header
+                    if (first) {
+                        first = false;
+                        continue;
+                    }
+                    if (line.isBlank()) continue;
+
+                    Question q = parseLine(line);
+                    if (q != null) {
+                        cache.add(q);
+                    }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
     /**
      * Expected format:
