@@ -103,7 +103,8 @@ public class MainMenuPanel extends JPanel {
         // ===== Difficulty info panel =====
         JLabel infoTitle = new JLabel("Mode details");
         infoTitle.setForeground(new Color(210, 210, 235));
-        infoTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // CENTER instead of LEFT
+        infoTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         infoTitle.setFont(infoTitle.getFont().deriveFont(Font.BOLD, 13f));
 
         JTextArea diffInfo = new JTextArea(4, 24);
@@ -117,16 +118,23 @@ public class MainMenuPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(40, 50, 90)),
                 BorderFactory.createEmptyBorder(6, 8, 6, 8)
         ));
+        // keep a nice fixed width and center the text area as a component
+        diffInfo.setMaximumSize(new Dimension(320, diffInfo.getPreferredSize().height));
+        diffInfo.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JPanel infoPanel = new JPanel();
         infoPanel.setOpaque(false);
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        // center the whole block inside `card`
+        infoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         infoPanel.add(infoTitle);
         infoPanel.add(Box.createVerticalStrut(4));
         infoPanel.add(diffInfo);
 
         card.add(infoPanel);
         card.add(Box.createVerticalStrut(20));
+
 
         // Buttons row
         JPanel buttonsRow = new JPanel(new GridLayout(2, 2, 10, 10));
