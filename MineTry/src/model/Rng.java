@@ -1,11 +1,16 @@
 package model;
 
-
-
-import java.util.random.RandomGenerator;
-
+import java.util.Random;
 
 public class Rng {
-private static final RandomGenerator RNG = RandomGenerator.getDefault();
-public static RandomGenerator current(){ return RNG; }
+
+    private static final Random RNG = new Random();
+
+    private Rng() {
+        // utility class, no instances
+    }
+
+    public static Random current() {
+        return RNG;
+    }
 }
