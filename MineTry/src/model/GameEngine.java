@@ -7,7 +7,9 @@ import java.util.random.RandomGenerator;
 
 public class GameEngine {
 
-    private static final int BONUS_PER_LIFE = 5; // TODO: later make per-difficulty
+    private static final int BONUS_PER_LIFE = 5; // TODO: later make per-difficulty aza bdna y3ne
+    private static final int MAX_LIVES = 10;   
+
 
     private final BoardGenerator boardGen;
     private final CascadeService cascade;
@@ -244,18 +246,32 @@ public class GameEngine {
     }
     
  // change team lives and end game if <= 0
+ // change team lives and handle overflow / game over
     private void addLives(Game game, int delta) {
-        int lives = game.getTeamLives() + delta;
-        if (lives < 0) lives = 0;
-        game.setTeamLives(lives);
+        int current = game.getTeamLives();
+        int newLives = current + delta;
 
-        if (lives <= 0) {
+        // If we go above MAX_LIVES, convert the extras to points
+        if (newLives > MAX_LIVES) {
+            int extraHearts = newLives - MAX_LIVES;
+            newLives = MAX_LIVES;
+            if (extraHearts > 0) {
+                game.addToTeamScore(extraHearts * BONUS_PER_LIFE);
+            }
+        }
+
+        // If we go below 0 → game over
+        if (newLives <= 0) {
+            game.setTeamLives(0);
             finishGame(game, false);
+        } else {
+            game.setTeamLives(newLives);
         }
     }
 
+
     // apply the big scoring table: depends on game difficulty + question level + correctness
-    public void applyQuestionOutcome(Game game, QuestionLevel qLevel, boolean correct) {
+    public String applyQuestionOutcome(Game game, QuestionLevel qLevel, boolean correct) {
         Difficulty gDiff = game.getDifficulty();
         RandomGenerator rng = Rng.current();
 
@@ -395,102 +411,137 @@ public class GameEngine {
         if (heartsDelta != 0) {
             addLives(game, heartsDelta);
         }
-    }
 
-    
-    public void activateQuestion(Game game, Cell cell, QuestionLevel level, boolean correct) {
-        // Only revealed, unused QUESTION cells can be activated
-        if (!cell.isRevealed() ||
-            cell.getType() != CellType.QUESTION ||
-            cell.isUsedSpecial()) {
-            return;
+        // ------- build message for popup -------
+        StringBuilder sb = new StringBuilder();
+        sb.append(correct ? "Correct answer!\n" : "Wrong answer!\n");
+
+        if (points != 0) {
+            sb.append(points > 0 ? "+" : "").append(points).append(" pts\n");
+        }
+        if (heartsDelta != 0) {
+            sb.append(heartsDelta > 0 ? "+" : "").append(heartsDelta).append(" \u2665");
+        }
+        if (points == 0 && heartsDelta == 0) {
+            sb.append("No change in score or lives.");
         }
 
-        applyQuestionOutcome(game, level, correct);
+        return sb.toString();
+    }
+
+
+    
+    public String activateQuestion(Game game, Cell cell, QuestionLevel level, boolean correct) {
+        // Only revealed, unused QUESTION cells can be activated
+        if (!cell.isRevealed()
+                || cell.getType() != CellType.QUESTION
+                || cell.isUsedSpecial()) {
+            return null;
+        }
+
+        String msg = applyQuestionOutcome(game, level, correct);
 
         // mark as USED so it can't be used again
         cell.setUsedSpecial(true);
+
+        return msg;
     }
 
 
+
+
+
     
     
-    public void activateSurprise(Game game, int col, int row) {
+    public String activateSurprise(Game game, int col, int row) {
         Board board = game.getBoardFor(game.getActivePlayer());
-        if (!board.inBounds(col, row)) return;
+        if (!board.inBounds(col, row)) return null;
 
         Cell cell = board.get(col, row);
 
         // can only activate revealed, non-used surprise cells
-        if (!cell.isRevealed() ||
-            cell.getType() != CellType.SURPRISE ||
-            cell.isUsedSpecial()) {
-            return;
+        if (!cell.isRevealed()
+                || cell.getType() != CellType.SURPRISE
+                || cell.isUsedSpecial()) {
+            return null;
         }
 
-        applySurpriseEffect(game);
+        String msg = applySurpriseEffect(game);
 
         // mark as USED so it can't be activated again
         cell.setUsedSpecial(true);
+
+        return msg;
     }
+
+
 
 
     
  // Surprise activation logic according to difficulty
-    private void applySurpriseEffect(Game game) {
+    private String applySurpriseEffect(Game game) {
         Difficulty diff = game.getDifficulty();
 
-        int activationCost = 0;
-        int surprisePoints = 0;
+        int activationCost;
+        int surprisePoints;
 
-        // values taken from the spec:
-        // Easy:   cost 5,  good +1 life +8 pts,  bad -1 life -8 pts
-        // Medium: cost 8,  good +1 life +12 pts, bad -1 life -12 pts
-        // Hard:   cost 12, good +1 life +16 pts, bad -1 life -16 pts
         switch (diff) {
-            case EASY:
+            case EASY -> {
                 activationCost = 5;
                 surprisePoints = 8;
-                break;
-            case MEDIUM:
+            }
+            case MEDIUM -> {
                 activationCost = 8;
                 surprisePoints = 12;
-                break;
-            case HARD:
+            }
+            case HARD -> {
                 activationCost = 12;
                 surprisePoints = 16;
-                break;
-            default:
-                // fallback – should never happen, but keeps compiler 100% happy
+            }
+            default -> {
                 activationCost = 5;
                 surprisePoints = 8;
-                break;
+            }
         }
 
-        // Pay activation cost (score may go negative)
+        // Pay activation cost
         game.addToTeamScore(-activationCost);
 
-        java.util.random.RandomGenerator rng = Rng.current();
+        RandomGenerator rng = Rng.current();
         boolean good = rng.nextBoolean(); // 50-50 good / bad
 
         int lives = game.getTeamLives();
+        int heartsDelta;
+        int pointsDelta;
 
         if (good) {
-            // GOOD SURPRISE: +1 life, +surprisePoints
+            heartsDelta = +1;
+            pointsDelta = surprisePoints;
             lives += 1;
             game.setTeamLives(lives);
-            game.addToTeamScore(surprisePoints);
+            game.addToTeamScore(pointsDelta);
         } else {
-            // BAD SURPRISE: -1 life, -surprisePoints
+            heartsDelta = -1;
+            pointsDelta = -surprisePoints;
             lives -= 1;
             game.setTeamLives(lives);
-            game.addToTeamScore(-surprisePoints);
+            game.addToTeamScore(pointsDelta);
 
             if (lives <= 0) {
                 finishGame(game, false);
             }
         }
+
+        int netPoints = -activationCost + pointsDelta;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(good ? "Good surprise!\n" : "Bad surprise!\n");
+        sb.append(netPoints >= 0 ? "+" : "").append(netPoints).append(" pts total\n");
+        sb.append(heartsDelta > 0 ? "+" : "").append(heartsDelta).append(" \u2665");
+
+        return sb.toString();
     }
+
 
 
     

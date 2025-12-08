@@ -61,13 +61,15 @@ public class GameController {
             if (!cell.isRevealed()) {
                 engine.reveal(game, c, r);
 
+                // ✅ revealing (including cascade) ends the turn
                 if (game.getState() == GameState.RUNNING) {
                     game.swapTurn();
                 }
             }
 
-            // ---- SECOND CLICK: already revealed ----
+            // ---- SECOND CLICK: already revealed (possible special activation) ----
             else {
+
                 // If special tile already used, do nothing
                 if (cell.isUsedSpecial()) {
                     view.refreshFromModel();
@@ -75,20 +77,28 @@ public class GameController {
                 }
 
                 switch (cell.getType()) {
+
                     case SURPRISE -> {
                         // activate surprise (good/bad heart + points)
-                        engine.activateSurprise(game, c, r);
+                        String msg = engine.activateSurprise(game, c, r);
 
-                        if (game.getState() == GameState.RUNNING) {
-                            game.swapTurn();
+                        if (msg != null && window != null) {
+                            JOptionPane.showMessageDialog(
+                                    window,
+                                    msg,
+                                    "Surprise Cell",
+                                    JOptionPane.INFORMATION_MESSAGE
+                            );
                         }
+
+                        // ❌ NO swapTurn here – activation does NOT end the turn
                     }
 
                     case QUESTION -> {
-                        // 1) pick a question level (here: random among 4)
+                        // 1) pick a level (random for now)
                         QuestionLevel level = randomQuestionLevel();
 
-                        // 2) choose a random question for that level
+                        // 2) pick a random question
                         var maybeQ = questionService.random(level);
                         if (maybeQ.isEmpty()) {
                             JOptionPane.showMessageDialog(window,
@@ -100,33 +110,41 @@ public class GameController {
 
                         Question q = maybeQ.get();
 
-                        // 3) show dialog, get result
+                        // 3) show dialog and get answer
                         QuestionDialog dialog = new QuestionDialog(window, q);
                         Boolean correct = dialog.showAndGetResult();
 
-                        // user cancelled → don't use tile, don't swap turn
+                        // user cancelled → don't use tile, don't change turn
                         if (correct == null) {
                             break;
                         }
 
-                        // 4) apply scoring & hearts via GameEngine
-                        engine.activateQuestion(game, cell, q.getLevel(), correct);
+                        // 4) apply scoring & hearts
+                        String msg = engine.activateQuestion(game, cell, q.getLevel(), correct);
 
-                        if (game.getState() == GameState.RUNNING) {
-                            game.swapTurn();
+                        if (msg != null && window != null) {
+                            JOptionPane.showMessageDialog(
+                                    window,
+                                    msg,
+                                    "Question Result",
+                                    JOptionPane.INFORMATION_MESSAGE
+                            );
                         }
+
+                        // ❌ NO swapTurn here – activation does NOT end the turn
                     }
 
                     default -> {
-                        // clicking revealed normal cells does nothing
+                        // clicking a revealed normal cell does nothing
                     }
                 }
             }
 
-            // Update view and maybe show game-over dialog
             view.refreshFromModel();
             showGameOverIfNeeded();
         });
+
+        
 
         // ==========================
         // RIGHT CLICK = flag / unflag

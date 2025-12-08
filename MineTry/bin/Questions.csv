@@ -1,6 +1,6 @@
 ﻿ID,Question,Difficulty,A,B,C,D,Correct Answer
 1,Which of the following is a goal of Minesweeper?,1,reveal all cells including mines,reveal all non mine cells without losing all lives,place flags on every cell,finish as fast as possible,B
-2, In Minesweeper what does the number on a revealed cell represent?,1,The number of flags on the board,The number of mines in the 8 neighboring cells,The total number of mines on the board,The number of revealed cells so far,D
+2, In Minesweeper what does the number on a revealed cell represent?,1,The number of flags on the board,The number of mines in the 8 neighboring cells,The total number of mines on the board,The number of revealed cells so far,B
 3,What happens if you click directly on a mine in a normal Minesweeper game (without special rules),1,Nothing happens og,you gain a life ,the game end and you lose,all mines fly and disappear,C
 4,How do you usually mark a suspected mine on a cell?,1,by double clicking,by right clicking,by pressing the space bar,by pressing the letter N,B
 5,In our project how many players play together in one game?,1,two players,six players,seven players,one player,A

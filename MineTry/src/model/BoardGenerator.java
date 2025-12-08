@@ -36,27 +36,47 @@ public class BoardGenerator {
             }
         }
 
-        // ---- 2. Place question tiles (Q) on non-mine cells ----
-        placed = 0;
-        while (placed < questionCount) {
-            int c = rng.nextInt(cols);
-            int r = rng.nextInt(rows);
-            if (!mines[r][c] && !questions[r][c] && !surprises[r][c]) {
-                questions[r][c] = true;
-                placed++;
-            }
-        }
+     // ---- 2. Place question tiles (Q) on non-mine cells
+//      that are NOT adjacent to any mine ----
+placed = 0;
+int safetyCounter = 0;
+int maxAttempts = cols * rows * 20;  // just to avoid an infinite loop
 
-        // ---- 3. Place surprise tiles (S) on remaining free cells ----
-        placed = 0;
-        while (placed < surpriseCount) {
-            int c = rng.nextInt(cols);
-            int r = rng.nextInt(rows);
-            if (!mines[r][c] && !questions[r][c] && !surprises[r][c]) {
-                surprises[r][c] = true;
-                placed++;
-            }
-        }
+while (placed < questionCount && safetyCounter < maxAttempts) {
+  safetyCounter++;
+  int c = rng.nextInt(cols);
+  int r = rng.nextInt(rows);
+
+  if (mines[r][c]) continue;
+  if (questions[r][c] || surprises[r][c]) continue;
+
+  // do not put Q next to a mine
+  if (countAdjacentMines(mines, c, r) > 0) continue;
+
+  questions[r][c] = true;
+  placed++;
+}
+
+//---- 3. Place surprise tiles (S) on remaining free cells
+//      that are NOT adjacent to any mine ----
+placed = 0;
+safetyCounter = 0;
+
+while (placed < surpriseCount && safetyCounter < maxAttempts) {
+  safetyCounter++;
+  int c = rng.nextInt(cols);
+  int r = rng.nextInt(rows);
+
+  if (mines[r][c]) continue;
+  if (questions[r][c] || surprises[r][c]) continue;
+
+  // do not put S next to a mine
+  if (countAdjacentMines(mines, c, r) > 0) continue;
+
+  surprises[r][c] = true;
+  placed++;
+}
+
 
         // ---- 4. Build cells: mines, Q, S, then numbers/empties ----
         for (int r = 0; r < rows; r++) {
