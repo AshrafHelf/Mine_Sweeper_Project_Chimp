@@ -43,7 +43,7 @@ public class CascadeService {
             cell.setRevealed(true);
 
             // if EMPTY, expand to neighbors
-            if (cell.getType() == CellType.EMPTY) {
+            if (cell.getType() == CellType.EMPTY || cell.getType()==CellType.QUESTION) {
                 for (int dr = -1; dr <= 1; dr++) {
                     for (int dc = -1; dc <= 1; dc++) {
                         if (dr == 0 && dc == 0) continue;
