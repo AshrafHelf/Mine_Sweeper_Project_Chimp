@@ -1,0 +1,13 @@
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Java build output
+bin/
+target/
+*.class
+
+# OS noise
+.DS_Store
+Thumbs.db
