@@ -10,7 +10,11 @@ import java.util.List;
 
 public class HistoryDialog extends JDialog {
 
-    private static final DateTimeFormatter TIME_FMT =
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private static final DateTimeFormatter TIME_FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public HistoryDialog(JFrame owner, List<GameRecord> records) {

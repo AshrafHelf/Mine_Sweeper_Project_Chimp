@@ -12,7 +12,12 @@ import java.util.List;
 
 public class MainWindow extends JFrame {
 
-    public interface NewGameListener {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public interface NewGameListener {
         void start(Difficulty difficulty, String p1, String p2);
     }
 

@@ -2,7 +2,6 @@ package model;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,12 +15,10 @@ import java.nio.charset.StandardCharsets;
 
 public class CsvQuestionRepository implements QuestionRepository {
 
-    private final Path csvPath;
     private final List<Question> cache = new ArrayList<>();
     private final Random rnd = new Random();
 
     public CsvQuestionRepository(Path csvPath) {
-        this.csvPath = csvPath;
         loadAll();
     }
 

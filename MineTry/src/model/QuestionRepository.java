@@ -4,9 +4,6 @@ package model;
 import java.util.List;
 import java.util.Optional;
 
-import model.Question;
-import model.QuestionLevel;
-
 
 public interface QuestionRepository {
 List<Question> findAll();

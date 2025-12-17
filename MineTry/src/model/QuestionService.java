@@ -1,12 +1,6 @@
 package model;
 
 
-import model.QuestionRepository;
-import model.SysData;
-
-import model.Question;
-import model.QuestionLevel;
-
 import java.util.List;
 import java.util.Optional;
 

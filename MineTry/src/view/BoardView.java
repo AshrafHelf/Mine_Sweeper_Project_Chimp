@@ -4,8 +4,6 @@ import javax.swing.*;
 
 import model.Board;
 import model.Cell;
-import model.CellType;
-
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -13,7 +11,11 @@ import java.util.function.BiConsumer;
 
 public class BoardView extends JPanel {
 
-    private final int cols;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private final int cols;
     private final int rows;
     private final JButton[][] buttons;
 
