@@ -9,12 +9,22 @@ public abstract class Cell {
     protected boolean revealed;
     protected boolean flagged;
     protected boolean usedSpecial;
+    protected boolean isFlaggedscore;
 
-    protected Cell(Coordinate at) {
+    public boolean isFlaggedscore() {
+		return isFlaggedscore;
+	}
+
+	public void setFlaggedscore(boolean isFlaggedscore) {
+		this.isFlaggedscore = isFlaggedscore;
+	}
+
+	protected Cell(Coordinate at) {
         this.at = at;
         this.revealed = false;
         this.flagged = false;
         this.usedSpecial = false;
+        this.isFlaggedscore=false;
     }
 
     public Coordinate getAt() {

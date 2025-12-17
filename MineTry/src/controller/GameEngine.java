@@ -128,8 +128,11 @@ public class GameEngine {
         boolean addingFlag = !cell.isFlagged();
         cell.setFlagged(addingFlag);
 
+        if(addingFlag && !cell.isFlaggedscore()) {
         int deltaScore = cell.scoreforFlag(addingFlag);
         game.addToTeamScore(deltaScore);
+        cell.setFlaggedscore(true);
+        }
     }
 
 
