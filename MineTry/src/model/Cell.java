@@ -9,6 +9,8 @@ public class Cell {
     private boolean revealed;
     private boolean flagged;
     private boolean usedSpecial; // for SURPRISE / QUESTION cells
+    private boolean flagScored; // true after first time we place a flag on this cell
+
 
 
     public Cell(Coordinate at, CellType type, int adjacentMines) {
@@ -49,6 +51,14 @@ public class Cell {
 
     public void setFlagged(boolean flagged) {
         this.flagged = flagged;
+    }
+    
+    public boolean isFlagScored() {
+        return flagScored;
+    }
+
+    public void setFlagScored(boolean flagScored) {
+        this.flagScored = flagScored;
     }
     
     public boolean isUsedSpecial() {

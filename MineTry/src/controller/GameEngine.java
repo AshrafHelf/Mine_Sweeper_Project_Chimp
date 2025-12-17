@@ -118,14 +118,23 @@ public class GameEngine {
         if (!board.inBounds(col, row)) return;
 
         Cell cell = board.get(col, row);
+
+        // Can't flag revealed cells
         if (cell.isRevealed()) return;
 
         boolean addingFlag = !cell.isFlagged();
         cell.setFlagged(addingFlag);
 
-        int deltaScore = scoring.scoreForFlag(cell.getType(), addingFlag);
-        game.addToTeamScore(deltaScore);
+        // Score only the FIRST time a flag is PLACED on this cell
+        if (addingFlag && !cell.isFlagScored()) {
+            int deltaScore = scoring.scoreForFlag(cell.getType(), true);
+            game.addToTeamScore(deltaScore);
+            cell.setFlagScored(true);
+        }
+
+        // Removing flag: no score change (and we KEEP flagScored=true so it can't be farmed)
     }
+
 
 
     // ------------------ helpers ------------------
