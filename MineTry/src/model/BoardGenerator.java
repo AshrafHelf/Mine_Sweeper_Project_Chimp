@@ -1,6 +1,10 @@
 package model;
 
 import java.util.random.RandomGenerator;
+
+import enums.CellType;
+import enums.Difficulty;
+
 import java.util.Random;
 
 public class BoardGenerator {

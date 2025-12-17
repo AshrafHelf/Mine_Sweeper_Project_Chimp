@@ -2,7 +2,7 @@ package view;
 
 import javax.swing.*;
 
-import model.Difficulty;
+import enums.Difficulty;
 
 import java.awt.*;
 

@@ -7,6 +7,11 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.random.RandomGenerator;
 
+import enums.CellType;
+import enums.Difficulty;
+import enums.GameState;
+import enums.QuestionLevel;
+
 public class GameEngine {
 
     private static final int BONUS_PER_LIFE = 5; // TODO: later make per-difficulty aza bdna y3ne

@@ -1,9 +1,11 @@
-package controller;
+package view;
 
 import model.*;
-import view.MainWindow;
 
 import javax.swing.*;
+
+import controller.GameEngine;
+import controller.MenuController;
 
 public class MainApp {
     public static void main(String[] args) {

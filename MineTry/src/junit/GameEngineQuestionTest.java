@@ -2,13 +2,13 @@ package junit;
 import org.junit.Test;
 
 import controller.GameEngine;
+import enums.CellType;
+import enums.Difficulty;
+import enums.QuestionLevel;
 import model.Cell;
-import model.CellType;
 import model.Coordinate;
-import model.Difficulty;
 import model.Game;
 import model.Player;
-import model.QuestionLevel;
 
 import static org.junit.Assert.*;
 

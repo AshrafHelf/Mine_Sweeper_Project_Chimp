@@ -1,4 +1,4 @@
-package model;  // make sure this matches your real package name
+package enums;  // make sure this matches your real package name
 
 public enum Difficulty {
     EASY  (9,  9, 10,  6, 2, 10),  // cols, rows, mines, Q, S, lives

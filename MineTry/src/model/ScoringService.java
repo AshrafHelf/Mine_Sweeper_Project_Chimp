@@ -1,5 +1,7 @@
 package model;
 
+import enums.CellType;
+
 public class ScoringService {
 
     /**
@@ -31,8 +33,5 @@ public class ScoringService {
         };
     }
 
-    // Later we’ll add:
-    // - getActivationCost(Difficulty diff)
-    // - applySurpriseGood/Bad(...)
-    // - applyQuestionResult(...)
+    
 }

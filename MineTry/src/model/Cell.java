@@ -1,14 +1,16 @@
 package model;
 
+import enums.CellType;
+
 public class Cell {
 
     private final CellType type;
-    private final Coordinate at;     // <<< FIXED: Uses your own Coordinate type
+    private final Coordinate at;     
     private final int adjacentMines;
 
     private boolean revealed;
     private boolean flagged;
-    private boolean usedSpecial; // for SURPRISE / QUESTION cells
+    private boolean usedSpecial; 
 
 
     public Cell(Coordinate at, CellType type, int adjacentMines) {
