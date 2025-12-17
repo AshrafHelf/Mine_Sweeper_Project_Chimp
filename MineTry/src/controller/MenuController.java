@@ -2,7 +2,6 @@ package controller;
 
 import model.Difficulty;
 import model.Game;
-import model.GameEngine;
 import model.HistoryService;
 import model.QuestionService;
 import view.GamePanel;

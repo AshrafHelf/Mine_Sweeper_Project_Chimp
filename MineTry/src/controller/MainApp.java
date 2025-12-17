@@ -19,14 +19,14 @@ public class MainApp {
             QuestionService questionService = new QuestionService(questionRepo, sysData);
             BoardGenerator boardGenerator   = new BoardGenerator();
             ScoringService scoringService   = new ScoringService();
-            TurnService turnService         = new TurnService();
-            CascadeService cascadeService   = new CascadeService();
+            
+          
             HistoryService historyService   = new HistoryService(historyRepo);
             GameEngine gameEngine           = new GameEngine(
                     boardGenerator,
-                    cascadeService,
+                 
                     scoringService,
-                    turnService,
+                    
                     historyService
             );
 

@@ -5,7 +5,12 @@ import java.awt.*;
 
 public class GameOverDialog extends JDialog {
 
-    public GameOverDialog(JFrame owner, boolean won, int finalScore) {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public GameOverDialog(JFrame owner, boolean won, int finalScore) {
         super(owner, "Game Over", true); // modal dialog
         buildUI(won, finalScore);
         pack();

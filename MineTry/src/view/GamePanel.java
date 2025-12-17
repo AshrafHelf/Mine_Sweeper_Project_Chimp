@@ -13,7 +13,12 @@ import java.util.function.BiConsumer;
 
 public class GamePanel extends JPanel {
 
-    private static final int MAX_LIVES = 10;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	private static final int MAX_LIVES = 10;
 
     private final Game game;
     private Runnable backListener;
@@ -186,7 +191,6 @@ public class GamePanel extends JPanel {
 
     public void refreshFromModel() {
         Player p1 = game.getPlayer1();
-        Player p2 = game.getPlayer2();
         Board b1 = game.getBoard1();
         Board b2 = game.getBoard2();
 

@@ -8,7 +8,11 @@ import java.util.List;
 
 public class QuestionDialog extends JDialog {
 
-    private boolean answered = false;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private boolean answered = false;
     private boolean correct  = false;
 
     public QuestionDialog(JFrame owner, Question question) {

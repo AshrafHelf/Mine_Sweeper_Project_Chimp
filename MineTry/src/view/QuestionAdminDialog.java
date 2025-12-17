@@ -5,7 +5,6 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 import model.Question;
-import model.QuestionLevel;
 import model.QuestionService;
 
 import java.awt.*;
@@ -13,7 +12,11 @@ import java.util.List;
 
 public class QuestionAdminDialog extends JDialog {
 
-    private JTable table;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private JTable table;
     private JButton addBtn, editBtn, deleteBtn, closeBtn;
 
     private final QuestionService qService;

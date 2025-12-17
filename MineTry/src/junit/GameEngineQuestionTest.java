@@ -1,12 +1,12 @@
 package junit;
 import org.junit.Test;
 
+import controller.GameEngine;
 import model.Cell;
 import model.CellType;
 import model.Coordinate;
 import model.Difficulty;
 import model.Game;
-import model.GameEngine;
 import model.Player;
 import model.QuestionLevel;
 
@@ -27,7 +27,7 @@ public class GameEngineQuestionTest {
     // ✅ J1 – EASY + EASY question, correct answer
     @Test
     public void testApplyQuestionOutcome_easyEasyCorrect() {
-        GameEngine engine = new GameEngine(null, null, null, null, null);
+        GameEngine engine = new GameEngine(null, null,  null);
 
         Game game = createGame(Difficulty.EASY, 3, 0);
 
@@ -42,7 +42,7 @@ public class GameEngineQuestionTest {
     // ✅ J2 – MEDIUM + EXPERT question, correct answer
     @Test
     public void testApplyQuestionOutcome_mediumExpertCorrect() {
-        GameEngine engine = new GameEngine(null, null, null, null, null);
+        GameEngine engine = new GameEngine(null, null, null);
 
         Game game = createGame(Difficulty.MEDIUM, 3, 0);
 
@@ -57,7 +57,7 @@ public class GameEngineQuestionTest {
     // ✅ J3 – HARD + HARD question, correct answer
     @Test
     public void testApplyQuestionOutcome_hardHardCorrect() {
-        GameEngine engine = new GameEngine(null, null, null, null, null);
+        GameEngine engine = new GameEngine(null, null,  null);
 
         Game game = createGame(Difficulty.HARD, 4, 10);
 
@@ -73,7 +73,7 @@ public class GameEngineQuestionTest {
     // ✅ J4 – activateQuestion works only once on a QUESTION cell
     @Test
     public void testActivateQuestion_marksUsedAndNotTwice() {
-        GameEngine engine = new GameEngine(null, null, null, null, null);
+        GameEngine engine = new GameEngine(null, null, null);
 
         Game game = createGame(Difficulty.EASY, 3, 0);
 

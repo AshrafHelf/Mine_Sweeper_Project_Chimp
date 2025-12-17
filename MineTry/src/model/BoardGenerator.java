@@ -1,9 +1,10 @@
 package model;
 
 import java.util.random.RandomGenerator;
+import java.util.Random;
 
 public class BoardGenerator {
-
+	 private static final Random RNG = new Random();
     public Board generate(Difficulty d) {
         int cols = d.cols;
         int rows = d.rows;
@@ -23,7 +24,7 @@ public class BoardGenerator {
         boolean[][] questions = new boolean[rows][cols];
         boolean[][] surprises = new boolean[rows][cols];
 
-        RandomGenerator rng = Rng.current();
+        RandomGenerator rng = BoardGenerator.current();
 
         // ---- 1. Place mines ----
         int placed = 0;
@@ -118,5 +119,8 @@ while (placed < surpriseCount && safetyCounter < maxAttempts) {
             }
         }
         return count;
+    }
+    public static Random current() {
+        return RNG;
     }
 }

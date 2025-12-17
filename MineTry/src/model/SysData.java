@@ -4,9 +4,6 @@ package model;
 import java.util.ArrayList;
 import java.util.List;
 
-import model.GameRecord;
-import model.Question;
-
 
 public class SysData {
 private static final SysData INSTANCE = new SysData();

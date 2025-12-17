@@ -3,8 +3,6 @@ package model;
 
 import java.util.*;
 
-import model.*;
-
 
 public class CsvUtils {
 public static List<Question> readQuestions(String path){

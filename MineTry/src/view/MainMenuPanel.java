@@ -8,7 +8,12 @@ import java.awt.*;
 
 public class MainMenuPanel extends JPanel {
 
-    public interface StartListener {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public interface StartListener {
         void start(Difficulty difficulty, String player1, String player2);
     }
 

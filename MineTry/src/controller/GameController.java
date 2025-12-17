@@ -2,10 +2,8 @@ package controller;
 
 import model.Board;
 import model.Cell;
-import model.CellType;
 import model.Difficulty;
 import model.Game;
-import model.GameEngine;
 import model.GameState;
 import model.Question;
 import model.QuestionLevel;
@@ -161,7 +159,7 @@ public class GameController {
     // Random question level 1 of {EASY, MEDIUM, HARD, EXPERT}
     private QuestionLevel randomQuestionLevel() {
         QuestionLevel[] levels = QuestionLevel.values();
-        int idx = model.Rng.current().nextInt(levels.length);
+        int idx = model.BoardGenerator.current().nextInt(levels.length);
         return levels[idx];
     }
 
@@ -204,4 +202,6 @@ public class GameController {
         GameOverDialog dlg = new GameOverDialog(owner, won, finalScore);
         dlg.setVisible(true);
     }
+    
+    
 }

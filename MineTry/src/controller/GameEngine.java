@@ -1,8 +1,10 @@
-package model;
+package controller;
 
 
 import model.*;
 
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.random.RandomGenerator;
 
 public class GameEngine {
@@ -12,21 +14,19 @@ public class GameEngine {
 
 
     private final BoardGenerator boardGen;
-    private final CascadeService cascade;
+   
     private final ScoringService scoring;
-    private final TurnService turnService; // kept for future use
     private final HistoryService history;  // kept for future use
     
 
     public GameEngine(BoardGenerator boardGen,
-                      CascadeService cascade,
+                    
                       ScoringService scoring,
-                      TurnService turnService,
+                      
                       HistoryService history) {
         this.boardGen = boardGen;
-        this.cascade = cascade;
+        
         this.scoring = scoring;
-        this.turnService = turnService;
         this.history = history;
     }
 
@@ -46,15 +46,6 @@ public class GameEngine {
         return g;
     }
     
-    private int startingLivesFor(Difficulty diff) {
-        return switch (diff) {
-            case EASY   -> 10;  // “קחשמה ליחתמ עם 10 לבבות”
-            case MEDIUM -> 8;   // “קחשמ בינוני … 8 לבבות”
-            case HARD   -> 6;   // “קחשמ קשה … 6 לבבות”
-        };
-    }
-
-
     // Reveal a cell on the active player's board
     public void reveal(Game game, int col, int row) {
         if (game.getState() != GameState.RUNNING) return;
@@ -90,7 +81,7 @@ public class GameEngine {
                 }
             }
             case EMPTY -> {
-                cascade.cascadeReveal(board, col, row);
+                this.cascadeReveal(board, col, row);
                 game.addToTeamScore(scoring.scoreForReveal(CellType.EMPTY));
             }
             case NUMBER -> {
@@ -99,13 +90,13 @@ public class GameEngine {
             }
             case SURPRISE -> {
                 // FIRST click on S: reveal like empty (+1 point), DO NOT activate yet
-                cell.setRevealed(true);
+                this.cascadeReveal(board, col, row);
                 game.addToTeamScore(scoring.scoreForReveal(CellType.SURPRISE));
                 // activation happens on SECOND click in GameController
             }
             case QUESTION -> {
                 // FIRST click on Q: reveal like empty (+1 point), DO NOT open question yet
-                cell.setRevealed(true);
+                this.cascadeReveal(board, col, row);
                 game.addToTeamScore(scoring.scoreForReveal(CellType.QUESTION));
                 // activation (question dialog) happens on SECOND click in GameController
             }
@@ -199,7 +190,7 @@ public class GameEngine {
         mines[safeRow][safeCol] = false;
 
         // 3) place that mine somewhere else
-        RandomGenerator rng = Rng.current();
+        RandomGenerator rng = BoardGenerator.current();
         while (true) {
             int c = rng.nextInt(cols);
             int r = rng.nextInt(rows);
@@ -273,7 +264,7 @@ public class GameEngine {
     // apply the big scoring table: depends on game difficulty + question level + correctness
     public String applyQuestionOutcome(Game game, QuestionLevel qLevel, boolean correct) {
         Difficulty gDiff = game.getDifficulty();
-        RandomGenerator rng = Rng.current();
+        RandomGenerator rng = BoardGenerator.current();
 
         int points = 0;
         int heartsDelta = 0;
@@ -507,7 +498,7 @@ public class GameEngine {
         // Pay activation cost
         game.addToTeamScore(-activationCost);
 
-        RandomGenerator rng = Rng.current();
+        RandomGenerator rng = BoardGenerator.current();
         boolean good = rng.nextBoolean(); // 50-50 good / bad
 
         int lives = game.getTeamLives();
@@ -587,5 +578,52 @@ public class GameEngine {
                 cell.setRevealed(true);
             }
         }
+    }
+    public void cascadeReveal(Board board, int startCol, int startRow) {
+        int rows = board.getRows();
+        int cols = board.getCols();
+
+        boolean[][] visited = new boolean[rows][cols];
+        Queue<Coordinate> queue = new ArrayDeque<>();
+
+        queue.add(new Coordinate(startCol, startRow));
+
+        while (!queue.isEmpty()) {
+            Coordinate cur = queue.remove();
+            int c = cur.col();
+            int r = cur.row();
+
+            if (!board.inBounds(c, r)) continue;
+            if (visited[r][c]) continue;
+            visited[r][c] = true;
+
+            Cell cell = board.get(c, r);
+
+            // skip if already revealed or flagged
+            if (cell.isRevealed() || cell.isFlagged()) continue;
+
+            // never auto-reveal mines
+            if (cell.getType() == CellType.MINE) continue;
+
+            // reveal any NON-MINE cell (EMPTY, NUMBER, QUESTION, SURPRISE)
+            cell.setRevealed(true);
+
+            // if EMPTY, expand to neighbors
+            if (cell.getType() == CellType.EMPTY || cell.getType()==CellType.QUESTION) {
+                for (int dr = -1; dr <= 1; dr++) {
+                    for (int dc = -1; dc <= 1; dc++) {
+                        if (dr == 0 && dc == 0) continue;
+                        int nc = c + dc;
+                        int nr = r + dr;
+
+                        if (board.inBounds(nc, nr) && !visited[nr][nc]) {
+                            queue.add(new Coordinate(nc, nr));
+                        }
+                    }
+                }
+            }
+        }
+    
+
     }
 }
