@@ -20,14 +20,14 @@ public class MainApp {
             // Services
             QuestionService questionService = new QuestionService(questionRepo, sysData);
             BoardGenerator boardGenerator   = new BoardGenerator();
-            ScoringService scoringService   = new ScoringService();
+        
             
           
             HistoryService historyService   = new HistoryService(historyRepo);
             GameEngine gameEngine           = new GameEngine(
                     boardGenerator,
                  
-                    scoringService,
+              
                     
                     historyService
             );

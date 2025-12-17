@@ -2,7 +2,6 @@ package model;
 
 import java.util.random.RandomGenerator;
 
-import enums.CellType;
 import enums.Difficulty;
 
 import java.util.Random;
@@ -88,17 +87,17 @@ while (placed < surpriseCount && safetyCounter < maxAttempts) {
             for (int c = 0; c < cols; c++) {
 
                 if (mines[r][c]) {
-                    b.set(c, r, new Cell(new Coordinate(c, r), CellType.MINE, 0));
+                    b.set(c, r, new MineCell(new Coordinate(c, r)));
                 } else if (questions[r][c]) {
-                    b.set(c, r, new Cell(new Coordinate(c, r), CellType.QUESTION, 0));
+                    b.set(c, r, new QuestionCell(new Coordinate(c, r)));
                 } else if (surprises[r][c]) {
-                    b.set(c, r, new Cell(new Coordinate(c, r), CellType.SURPRISE, 0));
+                    b.set(c, r, new SurpriseCell(new Coordinate(c, r)));
                 } else {
                     int adjMines = countAdjacentMines(mines, c, r);
                     if (adjMines > 0) {
-                        b.set(c, r, new Cell(new Coordinate(c, r), CellType.NUMBER, adjMines));
+                        b.set(c, r, new NumberCell(new Coordinate(c, r), adjMines));
                     } else {
-                        b.set(c, r, new Cell(new Coordinate(c, r), CellType.EMPTY, 0));
+                        b.set(c, r, new EmptyCell(new Coordinate(c, r)));
                     }
                 }
             }

@@ -2,36 +2,23 @@ package model;
 
 import enums.CellType;
 
-public class Cell {
+public abstract class Cell {
 
-    private final CellType type;
-    private final Coordinate at;     
-    private final int adjacentMines;
+    protected final Coordinate at;
 
-    private boolean revealed;
-    private boolean flagged;
-    private boolean usedSpecial; 
+    protected boolean revealed;
+    protected boolean flagged;
+    protected boolean usedSpecial;
 
-
-    public Cell(Coordinate at, CellType type, int adjacentMines) {
-        this.type = type;
+    protected Cell(Coordinate at) {
         this.at = at;
-        this.adjacentMines = adjacentMines;
         this.revealed = false;
         this.flagged = false;
         this.usedSpecial = false;
     }
 
-    public CellType getType() {
-        return type;
-    }
-
     public Coordinate getAt() {
         return at;
-    }
-
-    public int getAdjacentMines() {
-        return adjacentMines;
     }
 
     public boolean isRevealed() {
@@ -52,7 +39,7 @@ public class Cell {
     public void setFlagged(boolean flagged) {
         this.flagged = flagged;
     }
-    
+
     public boolean isUsedSpecial() {
         return usedSpecial;
     }
@@ -61,4 +48,12 @@ public class Cell {
         this.usedSpecial = usedSpecial;
     }
 
+    
+    public abstract CellType getType();
+    public abstract int scoreforReveal();
+    public abstract int scoreforFlag(boolean addedFlag);
+    
+    public int getAdjacentMines() {
+        return 0;
+    }
 }
