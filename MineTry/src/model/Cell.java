@@ -1,35 +1,34 @@
 package model;
 
-public class Cell {
+import enums.CellType;
 
-    private final CellType type;
-    private final Coordinate at;     // <<< FIXED: Uses your own Coordinate type
-    private final int adjacentMines;
+public abstract class Cell {
 
-    private boolean revealed;
-    private boolean flagged;
-    private boolean usedSpecial; // for SURPRISE / QUESTION cells
+    protected final Coordinate at;
 
+    protected boolean revealed;
+    protected boolean flagged;
+    protected boolean usedSpecial;
+    protected boolean isFlaggedscore;
 
-    public Cell(Coordinate at, CellType type, int adjacentMines) {
-        this.type = type;
+    public boolean isFlaggedscore() {
+		return isFlaggedscore;
+	}
+
+	public void setFlaggedscore(boolean isFlaggedscore) {
+		this.isFlaggedscore = isFlaggedscore;
+	}
+
+	protected Cell(Coordinate at) {
         this.at = at;
-        this.adjacentMines = adjacentMines;
         this.revealed = false;
         this.flagged = false;
         this.usedSpecial = false;
-    }
-
-    public CellType getType() {
-        return type;
+        this.isFlaggedscore=false;
     }
 
     public Coordinate getAt() {
         return at;
-    }
-
-    public int getAdjacentMines() {
-        return adjacentMines;
     }
 
     public boolean isRevealed() {
@@ -50,7 +49,7 @@ public class Cell {
     public void setFlagged(boolean flagged) {
         this.flagged = flagged;
     }
-    
+
     public boolean isUsedSpecial() {
         return usedSpecial;
     }
@@ -59,4 +58,12 @@ public class Cell {
         this.usedSpecial = usedSpecial;
     }
 
+    
+    public abstract CellType getType();
+    public abstract int scoreforReveal();
+    public abstract int scoreforFlag(boolean addedFlag);
+    
+    public int getAdjacentMines() {
+        return 0;
+    }
 }

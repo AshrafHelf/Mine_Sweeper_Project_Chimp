@@ -7,6 +7,11 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.random.RandomGenerator;
 
+import enums.CellType;
+import enums.Difficulty;
+import enums.GameState;
+import enums.QuestionLevel;
+
 public class GameEngine {
 
     private static final int BONUS_PER_LIFE = 5; // TODO: later make per-difficulty aza bdna y3ne
@@ -15,18 +20,18 @@ public class GameEngine {
 
     private final BoardGenerator boardGen;
    
-    private final ScoringService scoring;
+    
     private final HistoryService history;  // kept for future use
     
 
     public GameEngine(BoardGenerator boardGen,
                     
-                      ScoringService scoring,
+                   
                       
                       HistoryService history) {
         this.boardGen = boardGen;
         
-        this.scoring = scoring;
+     
         this.history = history;
     }
 
@@ -82,22 +87,22 @@ public class GameEngine {
             }
             case EMPTY -> {
                 this.cascadeReveal(board, col, row);
-                game.addToTeamScore(scoring.scoreForReveal(CellType.EMPTY));
+                game.addToTeamScore(cell.scoreforReveal());
             }
             case NUMBER -> {
                 cell.setRevealed(true);
-                game.addToTeamScore(scoring.scoreForReveal(CellType.NUMBER));
+                game.addToTeamScore(cell.scoreforReveal());
             }
             case SURPRISE -> {
                 // FIRST click on S: reveal like empty (+1 point), DO NOT activate yet
                 this.cascadeReveal(board, col, row);
-                game.addToTeamScore(scoring.scoreForReveal(CellType.SURPRISE));
+                game.addToTeamScore(cell.scoreforReveal());
                 // activation happens on SECOND click in GameController
             }
             case QUESTION -> {
                 // FIRST click on Q: reveal like empty (+1 point), DO NOT open question yet
                 this.cascadeReveal(board, col, row);
-                game.addToTeamScore(scoring.scoreForReveal(CellType.QUESTION));
+                game.addToTeamScore(cell.scoreforReveal());
                 // activation (question dialog) happens on SECOND click in GameController
             }
         }
@@ -123,8 +128,11 @@ public class GameEngine {
         boolean addingFlag = !cell.isFlagged();
         cell.setFlagged(addingFlag);
 
-        int deltaScore = scoring.scoreForFlag(cell.getType(), addingFlag);
+        if(addingFlag && !cell.isFlaggedscore()) {
+        int deltaScore = cell.scoreforFlag(addingFlag);
         game.addToTeamScore(deltaScore);
+        cell.setFlaggedscore(true);
+        }
     }
 
 
@@ -205,13 +213,13 @@ public class GameEngine {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 if (mines[r][c]) {
-                    board.set(c, r, new Cell(new Coordinate(c, r), CellType.MINE, 0));
+                    board.set(c, r, new MineCell(new Coordinate(c, r)));
                 } else {
                     int adj = countAdjacentMines(mines, c, r);
                     if (adj > 0) {
-                        board.set(c, r, new Cell(new Coordinate(c, r), CellType.NUMBER, adj));
+                        board.set(c, r, new NumberCell(new Coordinate(c, r),  adj));
                     } else {
-                        board.set(c, r, new Cell(new Coordinate(c, r), CellType.EMPTY, 0));
+                        board.set(c, r, new EmptyCell(new Coordinate(c, r)));
                     }
                 }
             }
@@ -508,7 +516,12 @@ public class GameEngine {
         if (good) {
             heartsDelta = +1;
             pointsDelta = surprisePoints;
+            if(lives <10) {
             lives += 1;
+            }
+            else {
+            	pointsDelta+=5;
+            }
             game.setTeamLives(lives);
             game.addToTeamScore(pointsDelta);
         } else {
@@ -609,7 +622,7 @@ public class GameEngine {
             cell.setRevealed(true);
 
             // if EMPTY, expand to neighbors
-            if (cell.getType() == CellType.EMPTY || cell.getType()==CellType.QUESTION) {
+            if (cell instanceof EmptyCell) {
                 for (int dr = -1; dr <= 1; dr++) {
                     for (int dc = -1; dc <= 1; dc++) {
                         if (dr == 0 && dc == 0) continue;

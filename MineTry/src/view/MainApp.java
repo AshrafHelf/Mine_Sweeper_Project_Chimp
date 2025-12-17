@@ -1,9 +1,11 @@
-package controller;
+package view;
 
 import model.*;
-import view.MainWindow;
 
 import javax.swing.*;
+
+import controller.GameEngine;
+import controller.MenuController;
 
 public class MainApp {
     public static void main(String[] args) {
@@ -18,14 +20,14 @@ public class MainApp {
             // Services
             QuestionService questionService = new QuestionService(questionRepo, sysData);
             BoardGenerator boardGenerator   = new BoardGenerator();
-            ScoringService scoringService   = new ScoringService();
+        
             
           
             HistoryService historyService   = new HistoryService(historyRepo);
             GameEngine gameEngine           = new GameEngine(
                     boardGenerator,
                  
-                    scoringService,
+              
                     
                     historyService
             );

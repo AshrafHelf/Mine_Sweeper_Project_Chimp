@@ -4,6 +4,8 @@ package model;
 import java.util.List;
 import java.util.Optional;
 
+import enums.QuestionLevel;
+
 
 public class QuestionService {
 private final QuestionRepository repo;

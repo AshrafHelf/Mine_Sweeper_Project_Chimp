@@ -3,6 +3,8 @@ package model;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import enums.Difficulty;
+
 public class GameRecord {
 
     private final LocalDateTime finishedAt;

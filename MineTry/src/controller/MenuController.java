@@ -1,6 +1,6 @@
 package controller;
 
-import model.Difficulty;
+import enums.Difficulty;
 import model.Game;
 import model.HistoryService;
 import model.QuestionService;

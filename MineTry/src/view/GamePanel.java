@@ -2,10 +2,10 @@ package view;
 
 import javax.swing.*;
 
+import enums.Difficulty;
+import enums.GameState;
 import model.Board;
-import model.Difficulty;
 import model.Game;
-import model.GameState;
 import model.Player;
 
 import java.awt.*;

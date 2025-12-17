@@ -2,11 +2,8 @@ package controller;
 
 import model.Board;
 import model.Cell;
-import model.Difficulty;
 import model.Game;
-import model.GameState;
 import model.Question;
-import model.QuestionLevel;
 import model.QuestionService;
 import view.GameOverDialog;
 import view.GamePanel;
@@ -14,6 +11,11 @@ import view.MainWindow;
 import view.QuestionDialog;
 
 import javax.swing.*;
+
+import enums.Difficulty;
+import enums.GameState;
+import enums.QuestionLevel;
+
 import java.awt.*;
 
 public class GameController {

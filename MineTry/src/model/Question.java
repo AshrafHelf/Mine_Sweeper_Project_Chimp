@@ -3,6 +3,8 @@ package model;
 
 import java.util.List;
 
+import enums.QuestionLevel;
+
 
 public class Question {
 private final String id;
