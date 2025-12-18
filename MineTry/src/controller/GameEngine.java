@@ -247,26 +247,39 @@ public class GameEngine {
     
  // change team lives and end game if <= 0
  // change team lives and handle overflow / game over
-    private void addLives(Game game, int delta) {
+ // returns overflow points gained from hearts above MAX_LIVES
+    private int addLives(Game game, int delta) {
         int current = game.getTeamLives();
         int newLives = current + delta;
 
-        // If we go above MAX_LIVES, convert the extras to points
+        int overflowPoints = 0;
+
         if (newLives > MAX_LIVES) {
             int extraHearts = newLives - MAX_LIVES;
             newLives = MAX_LIVES;
-            if (extraHearts > 0) {
-                game.addToTeamScore(extraHearts * BONUS_PER_LIFE);
-            }
+
+            // convert extra hearts to points (same rule everywhere)
+            overflowPoints = extraHearts * BONUS_PER_LIFE;
+            game.addToTeamScore(overflowPoints);
         }
 
-        // If we go below 0 → game over
         if (newLives <= 0) {
             game.setTeamLives(0);
             finishGame(game, false);
         } else {
             game.setTeamLives(newLives);
         }
+
+        return overflowPoints;
+    }
+
+
+    private int activationCostFor(Difficulty diff) {
+        return switch (diff) {
+            case EASY -> 5;
+            case MEDIUM -> 8;
+            case HARD -> 12;
+        };
     }
 
 
@@ -405,47 +418,70 @@ public class GameEngine {
             }
         }
 
-        if (points != 0) {
-            game.addToTeamScore(points);
-        }
-        if (heartsDelta != 0) {
-            addLives(game, heartsDelta);
-        }
+     // AFTER you compute points + heartsDelta:
 
-        // ------- build message for popup -------
-        StringBuilder sb = new StringBuilder();
-        sb.append(correct ? "Correct answer!\n" : "Wrong answer!\n");
+     // Apply points first
+     if (points != 0) {
+         game.addToTeamScore(points);
+     }
 
-        if (points != 0) {
-            sb.append(points > 0 ? "+" : "").append(points).append(" pts\n");
-        }
-        if (heartsDelta != 0) {
-            sb.append(heartsDelta > 0 ? "+" : "").append(heartsDelta).append(" \u2665");
-        }
-        if (points == 0 && heartsDelta == 0) {
-            sb.append("No change in score or lives.");
-        }
+     // Apply hearts and capture overflow points
+     int overflowPoints = 0;
+     if (heartsDelta != 0) {
+         overflowPoints = addLives(game, heartsDelta);
+     }
 
-        return sb.toString();
+     // ------- build message for popup -------
+     StringBuilder sb = new StringBuilder();
+     sb.append(correct ? "Correct answer!\n" : "Wrong answer!\n");
+
+
+     if (points != 0) {
+         sb.append("Question effect: ")
+           .append(points > 0 ? "+" : "")
+           .append(points).append(" pts\n");
+     }
+
+     if (heartsDelta != 0) {
+         sb.append("Hearts: ")
+           .append(heartsDelta > 0 ? "+" : "")
+           .append(heartsDelta).append(" \u2665\n");
+     }
+
+     if (overflowPoints > 0) {
+         sb.append("Heart overflow: +").append(overflowPoints).append(" pts\n");
+     }
+
+   
+
+     return sb.toString();
+
     }
 
 
-    
     public String activateQuestion(Game game, Cell cell, QuestionLevel level, boolean correct) {
-        // Only revealed, unused QUESTION cells can be activated
-        if (!cell.isRevealed()
-                || cell.getType() != CellType.QUESTION
-                || cell.isUsedSpecial()) {
-            return null;
-        }
+        if (!cell.isRevealed() || cell.getType() != CellType.QUESTION || cell.isUsedSpecial()) return null;
 
-        String msg = applyQuestionOutcome(game, level, correct);
+        int beforeScore = game.getTeamScore();
+        int beforeLives = game.getTeamLives();
 
-        // mark as USED so it can't be used again
+        int activationCost = activationCostFor(game.getDifficulty());
+        game.addToTeamScore(-activationCost);
+
+        String outcomeMsg = applyQuestionOutcome(game, level, correct);
+
         cell.setUsedSpecial(true);
 
-        return msg;
+        int deltaScore = game.getTeamScore() - beforeScore;
+        int deltaLives = game.getTeamLives() - beforeLives;
+
+        return "Activation cost: -" + activationCost + " pts\n"
+                + outcomeMsg + "\n"
+                + "Net change: " + signed(deltaScore) + " pts, " + signed(deltaLives) + " \u2665";
     }
+
+    private String signed(int x) { return (x >= 0 ? "+" : "") + x; }
+
 
 
 
@@ -486,58 +522,41 @@ public class GameEngine {
         int surprisePoints;
 
         switch (diff) {
-            case EASY -> {
-                activationCost = 5;
-                surprisePoints = 8;
-            }
-            case MEDIUM -> {
-                activationCost = 8;
-                surprisePoints = 12;
-            }
-            case HARD -> {
-                activationCost = 12;
-                surprisePoints = 16;
-            }
-            default -> {
-                activationCost = 5;
-                surprisePoints = 8;
-            }
+            case EASY -> { activationCost = 5;  surprisePoints = 8;  }
+            case MEDIUM -> { activationCost = 8; surprisePoints = 12; }
+            case HARD -> { activationCost = 12; surprisePoints = 16; }
+            default -> { activationCost = 5; surprisePoints = 8; }
         }
-
-        // Pay activation cost
-        game.addToTeamScore(-activationCost);
 
         RandomGenerator rng = BoardGenerator.current();
-        boolean good = rng.nextBoolean(); // 50-50 good / bad
+        boolean good = rng.nextBoolean();
 
-        int lives = game.getTeamLives();
-        int heartsDelta;
-        int pointsDelta;
+        // 1) activation cost
+        game.addToTeamScore(-activationCost);
 
-        if (good) {
-            heartsDelta = +1;
-            pointsDelta = surprisePoints;
-            lives += 1;
-            game.setTeamLives(lives);
-            game.addToTeamScore(pointsDelta);
-        } else {
-            heartsDelta = -1;
-            pointsDelta = -surprisePoints;
-            lives -= 1;
-            game.setTeamLives(lives);
-            game.addToTeamScore(pointsDelta);
+        // 2) outcome points (good=+surprisePoints, bad=-surprisePoints)
+        int pointsDelta = good ? +surprisePoints : -surprisePoints;
+        game.addToTeamScore(pointsDelta);
 
-            if (lives <= 0) {
-                finishGame(game, false);
-            }
-        }
+        // 3) hearts (good +1, bad -1) + overflow conversion via addLives
+        int heartsDelta = good ? +1 : -1;
+        int overflowPoints = addLives(game, heartsDelta);
 
-        int netPoints = -activationCost + pointsDelta;
-
+        // Build explicit message (shows cost + outcome + overflow)
         StringBuilder sb = new StringBuilder();
         sb.append(good ? "Good surprise!\n" : "Bad surprise!\n");
-        sb.append(netPoints >= 0 ? "+" : "").append(netPoints).append(" pts total\n");
-        sb.append(heartsDelta > 0 ? "+" : "").append(heartsDelta).append(" \u2665");
+
+        sb.append("Activation cost: -").append(activationCost).append(" pts\n");
+        sb.append("Surprise effect: ").append(pointsDelta >= 0 ? "+" : "").append(pointsDelta).append(" pts\n");
+
+        sb.append("Hearts: ").append(heartsDelta >= 0 ? "+" : "").append(heartsDelta).append(" \u2665\n");
+
+        if (overflowPoints > 0) {
+            sb.append("Heart overflow: +").append(overflowPoints).append(" pts\n");
+        }
+
+        int net = (-activationCost) + pointsDelta + overflowPoints;
+        sb.append("Net change: ").append(net >= 0 ? "+" : "").append(net).append(" pts");
 
         return sb.toString();
     }
