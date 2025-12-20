@@ -12,73 +12,162 @@ import java.util.List;
 
 public class MainWindow extends JFrame {
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public interface NewGameListener {
+    public interface NewGameListener {
         void start(Difficulty difficulty, String p1, String p2);
     }
 
     private NewGameListener newGameListener;
     private Runnable openQuestionsListener;
     private Runnable openHistoryListener;
+    private BananaRainOverlay bananaOverlay;
+
 
     private final CardLayout cards = new CardLayout();
     private final JPanel root = new JPanel(cards);
     private final MainMenuPanel menu = new MainMenuPanel();
 
+    
     public MainWindow() {
         super("Minesweeper");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 700);
         setLocationByPlatform(true);
 
+        // ✅ Remove top menu bar ("Game | Help")
+        setJMenuBar(null);
+
         setContentPane(root);
         root.add(menu, "menu");
+        
+     // Add a glass pane overlay for win animations
+        Image banana = new ImageIcon(getClass().getResource("/images/banana.png")).getImage();
+        BananaRainOverlay overlay = new BananaRainOverlay(banana);
+        setGlassPane(overlay);
+        overlay.setVisible(false);
 
-        buildMenuBar();
+
         wireMenuPanel();
 
         cards.show(root, "menu");
     }
 
-    // --- Top menu bar ---
+    // =========================
+    // Main menu panel callbacks
+    // =========================
 
-    private void buildMenuBar() {
-        JMenuBar bar = new JMenuBar();
+    private void wireMenuPanel() {
+        menu.setOnStart((diff, p1, p2) -> {
+            if (newGameListener != null) newGameListener.start(diff, p1, p2);
+        });
 
-        JMenu game = new JMenu("Game");
-
-        JMenuItem scores = new JMenuItem("History");
-        scores.addActionListener(e -> {
+        menu.setOnHistory(() -> {
             if (openHistoryListener != null) openHistoryListener.run();
         });
 
-        JMenuItem qadmin = new JMenuItem("Questions");
-        qadmin.addActionListener(e -> {
+        menu.setOnQuestions(() -> {
             if (openQuestionsListener != null) openQuestionsListener.run();
         });
 
-        JMenuItem exit = new JMenuItem("Exit");
-        exit.addActionListener(e -> dispose());
+        menu.setOnHelp(this::showAboutDialog);
 
-        game.add(scores);
-        game.add(qadmin);
-        game.addSeparator();
-        game.add(exit);
+        // ✅ هذا السطر هو الناقص
+        menu.setOnSettings(this::showSettingsDialog);
 
-        JMenu help = new JMenu("Help");
-        JMenuItem about = new JMenuItem("About");
-        about.addActionListener(e -> showAboutDialog());
-        help.add(about);
-
-        bar.add(game);
-        bar.add(help);
-
-        setJMenuBar(bar);
+        menu.setOnExit(this::dispose);
     }
+
+
+    // =========================
+    // Public callbacks (controllers)
+    // =========================
+
+    public void onNewGame(NewGameListener l) {
+        this.newGameListener = l;
+    }
+
+    public void onOpenQuestions(Runnable l) {
+        this.openQuestionsListener = l;
+    }
+
+    public void onOpenHistory(Runnable l) {
+        this.openHistoryListener = l;
+    }
+
+    // =========================
+    // Screen navigation
+    // =========================
+
+    public GamePanel showGame(Game game) {
+        SoundManager.stopMusic(); // stop menu theme
+        GamePanel gamePanel = new GamePanel(game);
+        root.add(gamePanel, "game");
+        cards.show(root, "game");
+        return gamePanel;
+    }
+
+
+    public void showQuestionAdmin(QuestionService qService) {
+        QuestionAdminDialog dialog = new QuestionAdminDialog(this, qService);
+        dialog.setVisible(true);
+    }
+
+    public void showHistory(List<GameRecord> records) {
+        HistoryDialog dialog = new HistoryDialog(this, records);
+        dialog.setVisible(true);
+    }
+
+    public void showMenu() {
+        SoundManager.playMusicLoop("/music/menu_theme.wav");
+        SoundManager.setMusicVolume(0.35f);
+        cards.show(root, "menu");
+        
+    }
+
+
+    // =========================
+    // About / Help dialog
+    // =========================
+    
+    private void showSettingsDialog() {
+        JDialog dlg = new JDialog(this, "Settings", true);
+        dlg.setLayout(new java.awt.BorderLayout());
+        dlg.getContentPane().setBackground(new java.awt.Color(12, 16, 35));
+
+        JPanel p = new JPanel();
+        p.setOpaque(false);
+        p.setBorder(javax.swing.BorderFactory.createEmptyBorder(16,16,16,16));
+        p.setLayout(new javax.swing.BoxLayout(p, javax.swing.BoxLayout.Y_AXIS));
+
+        JCheckBox mute = new JCheckBox("Mute");
+        mute.setOpaque(false);
+        mute.setForeground(java.awt.Color.WHITE);
+        mute.setSelected(SoundManager.isMusicMuted());
+        mute.addActionListener(e -> SoundManager.setMusicMuted(mute.isSelected()));
+
+        JLabel volLbl = new JLabel("Music volume");
+        volLbl.setForeground(java.awt.Color.WHITE);
+
+        JSlider vol = new JSlider(0, 100, (int)(SoundManager.getMusicVolume()*100));
+        vol.addChangeListener(e -> SoundManager.setMusicVolume(vol.getValue()/100f));
+
+        JButton ok = new JButton("OK");
+        ok.addActionListener(e -> dlg.dispose());
+
+        p.add(mute);
+        p.add(javax.swing.Box.createVerticalStrut(10));
+        p.add(volLbl);
+        p.add(vol);
+        p.add(javax.swing.Box.createVerticalStrut(14));
+        p.add(ok);
+
+        dlg.add(p, java.awt.BorderLayout.CENTER);
+        dlg.pack();
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
+    }
+
 
     private void showAboutDialog() {
         JDialog dlg = new JDialog(this, "About Minesweeper", true);
@@ -97,14 +186,15 @@ public class MainWindow extends JFrame {
         JLabel subtitle = new JLabel("Project for Minesweeper with questions and surprises.");
         subtitle.setForeground(new Color(190, 195, 220));
 
-        JLabel authors = new JLabel("Developed by: Chimp");
+        JLabel authors = new JLabel("Developed by: CHIMP");
         authors.setForeground(new Color(170, 175, 205));
 
         JLabel info = new JLabel("<html>" +
                 "• Two boards, cooperative play.<br/>" +
                 "• Shared lives and team score.<br/>" +
                 "• Question cells (Q) and surprise cells (S).<br/>" +
-                "• Admin screens for questions and game history." +
+                "• Admin screens for questions and game history.<br/>" +
+                "• Remaining lives are converted to points at the end." +
                 "</html>");
         info.setForeground(new Color(200, 205, 230));
 
@@ -136,61 +226,9 @@ public class MainWindow extends JFrame {
 
         dlg.pack();
         dlg.setLocationRelativeTo(this);
-        dlg.setMinimumSize(new Dimension(420, 250));
+        dlg.setMinimumSize(new Dimension(420, 260));
         dlg.setVisible(true);
     }
-
-    // --- Wiring main menu panel to callbacks ---
-
-    private void wireMenuPanel() {
-        menu.setOnStart((diff, p1, p2) -> {
-            if (newGameListener != null) newGameListener.start(diff, p1, p2);
-        });
-
-        menu.setOnHistory(() -> {
-            if (openHistoryListener != null) openHistoryListener.run();
-        });
-
-        menu.setOnQuestions(() -> {
-            if (openQuestionsListener != null) openQuestionsListener.run();
-        });
-
-        menu.setOnExit(this::dispose);
-    }
-
-    // --- Public callbacks used by controllers ---
-
-    public void onNewGame(NewGameListener l) {
-        this.newGameListener = l;
-    }
-
-    public void onOpenQuestions(Runnable l) {
-        this.openQuestionsListener = l;
-    }
-
-    public void onOpenHistory(Runnable l) {
-        this.openHistoryListener = l;
-    }
-
-    public GamePanel showGame(Game game) {
-        GamePanel gamePanel = new GamePanel(game);
-        root.add(gamePanel, "game");
-        cards.show(root, "game");
-        return gamePanel;
-    }
-
-    public void showQuestionAdmin(QuestionService qService) {
-        QuestionAdminDialog dialog = new QuestionAdminDialog(this, qService);
-        dialog.setVisible(true);
-    }
-
-
-    public void showHistory(List<GameRecord> records) {
-        HistoryDialog dialog = new HistoryDialog(this, records);
-        dialog.setVisible(true);
-    }
-
-    public void showMenu() {
-        cards.show(root, "menu");
-    }
+    
+    
 }

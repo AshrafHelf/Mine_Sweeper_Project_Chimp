@@ -48,6 +48,7 @@ public class GameController {
         // ==========================
         view.onCellReveal((c, r) -> {
             if (game.getState() != GameState.RUNNING) return;
+            
 
             Board board = game.getBoardFor(game.getActivePlayer());
             if (!board.inBounds(c, r)) return;
@@ -137,6 +138,7 @@ public class GameController {
                     }
                 }
             }
+            
 
             view.refreshFromModel();
             showGameOverIfNeeded();

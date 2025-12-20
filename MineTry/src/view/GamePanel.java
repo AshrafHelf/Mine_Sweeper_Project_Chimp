@@ -97,13 +97,9 @@ public class GamePanel extends JPanel {
         center.setBorder(BorderFactory.createEmptyBorder(14, 20, 14, 20));
 
         // Legend pill bar
-        JPanel legendWrap = new GlassPillPanel();
-        legendWrap.setLayout(new FlowLayout(FlowLayout.CENTER, 16, 8));
-        legendWrap.add(createLegendItem(new Color(255, 215, 0), "Q"));
-        legendWrap.add(createLegendItem(new Color(186, 85, 211), "S"));
-        legendWrap.add(createLegendItem(new Color(255, 99, 132), "Flag"));
-        legendWrap.add(createLegendItem(new Color(23, 35, 74), "Normal"));
+        JPanel legendWrap = createLegendPanel();
         center.add(legendWrap, BorderLayout.NORTH);
+
 
         Difficulty diff = game.getDifficulty();
         Player p1 = game.getPlayer1();
@@ -161,29 +157,65 @@ public class GamePanel extends JPanel {
         }
     }
 
-    private JComponent createLegendItem(Color color, String label) {
+    
+
+ // inside GamePanel
+
+    private JPanel createLegendPanel() {
+        JPanel legendWrap = new GlassPillPanel();
+        legendWrap.setLayout(new FlowLayout(FlowLayout.CENTER, 18, 10));
+
+        Icon flagIcon = scaledIcon("/images/flag.png", 20, 20);
+        Icon bananaIcon = scaledIcon("/images/banana.png", 22, 22);
+
+        legendWrap.add(createLegendItemDot(new Color(255, 215, 0), "Question (Q)"));
+        legendWrap.add(createLegendItemDot(new Color(186, 85, 211), "Surprise (S)"));
+
+        legendWrap.add(createLegendItemIcon(flagIcon, "Flag"));
+        legendWrap.add(createLegendItemIcon(bananaIcon, "Banana = Mine"));
+
+        legendWrap.add(createLegendItemDot(new Color(23, 35, 74), "Normal"));
+
+        return legendWrap;
+    }
+
+
+    private JComponent createLegendItemIcon(Icon icon, String text) {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         p.setOpaque(false);
 
-        JPanel dot = new JPanel() {
-            private static final long serialVersionUID = 1L;
+        JLabel iconLbl = new JLabel(icon);
+        JLabel lbl = new JLabel(text);
+
+        lbl.setForeground(new Color(235, 235, 255));
+        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 13.5f));
+
+        p.add(iconLbl);
+        p.add(lbl);
+        return p;
+    }
+
+    private JComponent createLegendItemDot(Color color, String text) {
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        p.setOpaque(false);
+
+        JComponent dot = new JComponent() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(color);
                 g2.fillOval(0, 0, getWidth(), getHeight());
-                g2.setColor(new Color(0,0,0,120));
-                g2.drawOval(0, 0, getWidth()-1, getHeight()-1);
+                g2.setColor(new Color(0, 0, 0, 120));
+                g2.drawOval(0, 0, getWidth() - 1, getHeight() - 1);
                 g2.dispose();
             }
         };
         dot.setPreferredSize(new Dimension(12, 12));
-        dot.setOpaque(false);
 
-        JLabel lbl = new JLabel(label);
+        JLabel lbl = new JLabel(text);
         lbl.setForeground(new Color(235, 235, 255));
-        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 12.5f));
+        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 13.5f));
 
         p.add(dot);
         p.add(lbl);
@@ -345,4 +377,14 @@ public class GamePanel extends JPanel {
             super.paintComponent(g);
         }
     }
+    
+    private Icon scaledIcon(String path, int w, int h) {
+        java.net.URL url = getClass().getResource(path);
+        if (url == null) return null;
+        Image img = new ImageIcon(url).getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        return new ImageIcon(img);
+    }
+
 }
+
+
