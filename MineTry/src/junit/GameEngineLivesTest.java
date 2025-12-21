@@ -1,7 +1,7 @@
 package junit;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+
 
 import org.junit.Test;
 
@@ -12,7 +12,7 @@ import model.BoardGenerator;
 import model.Game;
 import model.Player;
 import enums.QuestionLevel;
-import model.*;
+
 
 
 public class GameEngineLivesTest {

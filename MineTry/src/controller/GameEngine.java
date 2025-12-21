@@ -549,7 +549,6 @@ public class GameEngine {
 
     
 
-    // ---- End of game handling ----
 
     private void finishGame(Game game, boolean won) {
         game.setWon(won);
