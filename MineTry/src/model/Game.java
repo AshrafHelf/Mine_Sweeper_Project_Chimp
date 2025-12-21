@@ -1,6 +1,5 @@
 package model;
 
-import enums.CellType;
 import enums.Difficulty;
 import enums.GameState;
 
@@ -107,28 +106,5 @@ public class Game {
         this.won = won;
     }
     
-    public int getMineCountforplayer1() {
-    	int count=0;
-    	for(int i=0 ;i<this.difficulty.rows; i++) {
-    		for (int j=0; j<this.difficulty.cols;j++) {
-    			Cell c = b1.get(i, j);
-    			if(c.getType()==CellType.MINE)
-    				count++;
-    	}
-    	}
-    	return count;
-    		    	
-    }
-    public int getMineCountforplayer2() {
-    	int count=0;
-    	for(int i=0 ;i<this.difficulty.rows; i++) {
-    		for (int j=0; j<this.difficulty.cols;j++) {
-    			Cell c = b2.get(i, j);
-    			if(c.getType()==CellType.MINE)
-    				count++;
-    	}
-    	}
-    	return count;
-    		    	
-    }
+   
 }

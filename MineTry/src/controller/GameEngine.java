@@ -244,13 +244,12 @@ public class GameEngine {
         return count;
     }
     
- // change team lives and end game if <= 0
- // change team lives and handle overflow / game over
+ 
     private void addLives(Game game, int delta) {
         int current = game.getTeamLives();
         int newLives = current + delta;
 
-        // If we go above MAX_LIVES, convert the extras to points
+       
         if (newLives > MAX_LIVES) {
             int extraHearts = newLives - MAX_LIVES;
             newLives = MAX_LIVES;
@@ -550,7 +549,6 @@ public class GameEngine {
 
     
 
-    // ---- End of game handling ----
 
     private void finishGame(Game game, boolean won) {
         game.setWon(won);
