@@ -5,7 +5,6 @@ import org.junit.Test;
 
 import controller.GameEngine;
 import enums.Difficulty;
-import enums.GameState;
 import model.Board;
 import model.BoardGenerator;
 import model.Cell;
