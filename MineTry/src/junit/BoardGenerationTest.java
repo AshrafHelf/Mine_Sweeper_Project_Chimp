@@ -37,18 +37,18 @@ public class BoardGenerationTest {
 	public void BoardGenerationMineCountTest_Easy() {
 		Game game = newGame(Difficulty.EASY,"test1", "test2");
 		
-		assertEquals("MineCount for Easy game should be 10 for both players",
+		assertEquals("MineCount for Easy game should be 10 for Player 1",
                 10, game.getMineCountforplayer1());
-		assertEquals("MineCount for Easy game should be 10 for both players",
+		assertEquals("MineCount for Easy game should be 10 for Player 2",
                 10, game.getMineCountforplayer2());
 	}
 	@Test
 	public void BoardGenerationMineCountTest_Medium() {
 		Game game = newGame(Difficulty.MEDIUM,"test1", "test2");
 		
-		assertEquals("MineCount for Easy game should be 26 for both players",
+		assertEquals("MineCount for Meium game should be 26 for Player 1",
                 26, game.getMineCountforplayer1());
-		assertEquals("MineCount for Easy game should be 26 for both players",
+		assertEquals("MineCount for Medium game should be 26 for Player 2",
                 26, game.getMineCountforplayer2());
 	}
 	
@@ -56,9 +56,9 @@ public class BoardGenerationTest {
 	public void BoardGenerationMineCountTest_Hard() {
 		Game game = newGame(Difficulty.HARD,"test1", "test2");
 		
-		assertEquals("MineCount for Easy game should be 44 for both players",
+		assertEquals("MineCount for HARD game should be 44 for Player 1",
                 44, game.getMineCountforplayer1());
-		assertEquals("MineCount for Easy game should be 26 for both players",
+		assertEquals("MineCount for HARD game should be 26 for Player 2",
                 44, game.getMineCountforplayer2());
 	}
 	
