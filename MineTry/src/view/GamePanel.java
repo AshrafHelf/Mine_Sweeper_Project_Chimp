@@ -7,18 +7,15 @@ import enums.GameState;
 import model.Board;
 import model.Game;
 import model.Player;
+import view.WoodButton;
 
 import java.awt.*;
 import java.util.function.BiConsumer;
 
 public class GamePanel extends JPanel {
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
-	private static final int MAX_LIVES = 10;
+    private static final long serialVersionUID = 1L;
+    private static final int MAX_LIVES = 10;
 
     private final Game game;
     private Runnable backListener;
@@ -39,65 +36,64 @@ public class GamePanel extends JPanel {
         refreshFromModel();
     }
 
-    // --- Listener hooks for controller ---
+    public void onBackToMenu(Runnable r) { this.backListener = r; }
+    public void onRestart(Runnable r) { this.restartListener = r; }
+    public void onCellReveal(BiConsumer<Integer, Integer> c) { this.revealListener = c; }
+    public void onCellFlag(BiConsumer<Integer, Integer> c) { this.flagListener = c; }
 
-    public void onBackToMenu(Runnable r) {
-        this.backListener = r;
+    public void requestBack() { if (backListener != null) backListener.run(); }
+    public void requestRestart() { if (restartListener != null) restartListener.run(); }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth();
+            int h = getHeight();
+
+            GradientPaint gp = new GradientPaint(0, 0, new Color(12, 60, 40), 0, h, new Color(5, 18, 12));
+            g2.setPaint(gp);
+            g2.fillRect(0, 0, w, h);
+
+            g2.setColor(new Color(0, 0, 0, 70));
+            g2.fillRect(0, (int)(h*0.78), w, (int)(h*0.22));
+
+        } finally {
+            g2.dispose();
+        }
     }
-
-    public void onRestart(Runnable r) {
-        this.restartListener = r;
-    }
-
-    public void onCellReveal(BiConsumer<Integer, Integer> c) {
-        this.revealListener = c;
-    }
-
-    public void onCellFlag(BiConsumer<Integer, Integer> c) {
-        this.flagListener = c;
-    }
-
-    public void requestBack() {
-        if (backListener != null) backListener.run();
-    }
-
-    public void requestRestart() {
-        if (restartListener != null) restartListener.run();
-    }
-
-    // --- Build UI ---
 
     private void buildUI() {
         setLayout(new BorderLayout());
-        setBackground(new Color(10, 14, 33));
+        setOpaque(false);
 
-        // ===== Top toolbar =====
-        JToolBar toolbar = new JToolBar();
-        toolbar.setFloatable(false);
-        toolbar.setBackground(new Color(13, 19, 42));
+        // ===== Top bar =====
+        JPanel topBar = new JPanel(new BorderLayout());
+        topBar.setOpaque(false);
+        topBar.setBorder(BorderFactory.createEmptyBorder(10, 14, 8, 14));
 
-        JButton btnBack = new JButton("Back");
-        JButton btnRestart = new JButton("Restart");
+        JPanel leftBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftBtns.setOpaque(false);
 
-        btnBack.setFocusPainted(false);
-        btnRestart.setFocusPainted(false);
+        WoodButton btnBack = new WoodButton("MENU");
+        WoodButton btnRestart = new WoodButton("RESTART");
 
-        btnBack.addActionListener(e -> {
-            if (backListener != null) backListener.run();
-        });
-        btnRestart.addActionListener(e -> {
-            if (restartListener != null) restartListener.run();
-        });
+        btnBack.addActionListener(e -> { if (backListener != null) backListener.run(); });
+        btnRestart.addActionListener(e -> { if (restartListener != null) restartListener.run(); });
 
-        toolbar.add(btnBack);
-        toolbar.add(btnRestart);
-        toolbar.addSeparator();
+        leftBtns.add(btnBack);
+        leftBtns.add(btnRestart);
 
         lblTurn = new JLabel();
-        lblTurn.setForeground(Color.WHITE);
-        toolbar.add(lblTurn);
+        lblTurn.setForeground(new Color(240, 255, 240));
+        lblTurn.setFont(lblTurn.getFont().deriveFont(Font.BOLD, 14f));
 
-        add(toolbar, BorderLayout.NORTH);
+        topBar.add(leftBtns, BorderLayout.WEST);
+        topBar.add(lblTurn, BorderLayout.CENTER);
+
+        add(topBar, BorderLayout.NORTH);
 
         // ===== Center: boards + legend =====
         JPanel center = new JPanel(new BorderLayout());
@@ -114,21 +110,11 @@ public class GamePanel extends JPanel {
         boardAView = new BoardView(diff.cols, diff.rows, "Board A – " + p1.getName());
         boardBView = new BoardView(diff.cols, diff.rows, "Board B – " + p2.getName());
 
-        // Left-click handlers (reveal)
-        boardAView.setOnCellClick((c, r) -> {
-            if (revealListener != null) revealListener.accept(c, r);
-        });
-        boardBView.setOnCellClick((c, r) -> {
-            if (revealListener != null) revealListener.accept(c, r);
-        });
+        boardAView.setOnCellClick((c, r) -> { if (revealListener != null) revealListener.accept(c, r); });
+        boardBView.setOnCellClick((c, r) -> { if (revealListener != null) revealListener.accept(c, r); });
 
-        // Right-click handlers (flag)
-        boardAView.setOnCellRightClick((c, r) -> {
-            if (flagListener != null) flagListener.accept(c, r);
-        });
-        boardBView.setOnCellRightClick((c, r) -> {
-            if (flagListener != null) flagListener.accept(c, r);
-        });
+        boardAView.setOnCellRightClick((c, r) -> { if (flagListener != null) flagListener.accept(c, r); });
+        boardBView.setOnCellRightClick((c, r) -> { if (flagListener != null) flagListener.accept(c, r); });
 
         JPanel boardsRow = new JPanel(new GridLayout(1, 2, 24, 0));
         boardsRow.setOpaque(false);
@@ -138,16 +124,17 @@ public class GamePanel extends JPanel {
         center.add(boardsRow, BorderLayout.CENTER);
         add(center, BorderLayout.CENTER);
 
-        // ===== Bottom: team lives + team score =====
+        // ===== Bottom: lives + score =====
         JPanel bottom = new JPanel(new BorderLayout());
-        bottom.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
-        bottom.setBackground(new Color(9, 12, 28));
+        bottom.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        bottom.setBackground(new Color(6, 22, 14));
+        bottom.setOpaque(true);
 
         lblLives = new JLabel();
-        lblLives.setForeground(Color.WHITE);
+        lblLives.setForeground(new Color(230, 255, 230));
 
         lblScore = new JLabel();
-        lblScore.setForeground(Color.WHITE);
+        lblScore.setForeground(new Color(230, 255, 230));
         lblScore.setFont(lblScore.getFont().deriveFont(Font.BOLD, 14f));
 
         bottom.add(lblLives, BorderLayout.WEST);
@@ -157,9 +144,13 @@ public class GamePanel extends JPanel {
     }
 
     private JPanel createLegendPanel() {
-        JPanel legend = new JPanel();
-        legend.setOpaque(false);
-        legend.setLayout(new FlowLayout(FlowLayout.CENTER, 16, 4));
+        JPanel legend = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 4));
+        legend.setOpaque(true);
+        legend.setBackground(new Color(6, 22, 14));
+        legend.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(90, 140, 90)),
+                BorderFactory.createEmptyBorder(6, 10, 6, 10)
+        ));
 
         legend.add(createLegendItem(new Color(255, 215, 0), "Q"));
         legend.add(createLegendItem(new Color(186, 85, 211), "S"));
@@ -176,18 +167,16 @@ public class GamePanel extends JPanel {
         JPanel square = new JPanel();
         square.setPreferredSize(new Dimension(14, 14));
         square.setBackground(color);
-        square.setBorder(BorderFactory.createLineBorder(new Color(35, 45, 90)));
+        square.setBorder(BorderFactory.createLineBorder(new Color(90, 140, 90)));
 
         JLabel lbl = new JLabel(label);
-        lbl.setForeground(Color.WHITE);
-        lbl.setFont(lbl.getFont().deriveFont(12f));
+        lbl.setForeground(new Color(240, 255, 240));
+        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 12f));
 
         p.add(square);
         p.add(lbl);
         return p;
     }
-
-    // --- Redraw everything from model ---
 
     public void refreshFromModel() {
         Player p1 = game.getPlayer1();
@@ -213,7 +202,6 @@ public class GamePanel extends JPanel {
             }
         }
 
-        // hearts-style lives
         int lives = game.getTeamLives();
         StringBuilder hearts = new StringBuilder("Shared lives: ")
                 .append(lives).append("/").append(MAX_LIVES).append("   ");

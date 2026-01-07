@@ -18,6 +18,11 @@ public class BoardView extends JPanel {
 	private final int cols;
     private final int rows;
     private final JButton[][] buttons;
+    private final ImageIcon bombIcon = loadIcon("/img/bomb.png", 18, 18);
+    private final ImageIcon flagIcon = loadIcon("/img/flag.png", 18, 18);
+
+    
+
 
     private BiConsumer<Integer, Integer> onCellClick;       // left click = reveal
     private BiConsumer<Integer, Integer> onCellRightClick;  // right click = flag
@@ -80,6 +85,13 @@ public class BoardView extends JPanel {
 
         add(grid, BorderLayout.CENTER);
     }
+    
+    private ImageIcon loadIcon(String path, int w, int h) {
+        java.net.URL url = getClass().getResource(path);
+        if (url == null) return null;
+        Image img = new ImageIcon(url).getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        return new ImageIcon(img);
+    }
 
     public void setOnCellClick(BiConsumer<Integer, Integer> listener) {
         this.onCellClick = listener;
@@ -105,70 +117,90 @@ public class BoardView extends JPanel {
                 Cell cell = board.get(c, r);
                 JButton btn = buttons[r][c];
 
+                // مهم: نمسح كل شيء قبل إعادة الرسم
+                btn.setIcon(null);
+                btn.setText("");
+
                 if (cell == null) {
-                    btn.setText("");
                     btn.setBackground(new Color(23, 35, 74));
+                    btn.setForeground(Color.WHITE);
                     continue;
                 }
 
+                // ===== HIDDEN CELL =====
                 if (!cell.isRevealed()) {
-                    // HIDDEN CELL
                     if (cell.isFlagged()) {
-                        btn.setText("F");
+                        // FLAG ICON
+                        if (flagIcon != null) {
+                            btn.setIcon(flagIcon);
+                            btn.setText("");
+                        } else {
+                            btn.setText("F");
+                        }
                         btn.setBackground(new Color(200, 80, 80));
                         btn.setForeground(Color.WHITE);
                     } else {
-                        btn.setText("");
                         btn.setBackground(new Color(23, 35, 74));
                         btn.setForeground(Color.WHITE);
                     }
-                } else {
-                    // REVEALED CELL
-                    switch (cell.getType()) {
-                        case MINE -> {
-                            btn.setText("M");
-                            btn.setBackground(new Color(139, 0, 0));
-                            btn.setForeground(Color.WHITE);
-                        }
-                        case NUMBER -> {
-                            int n = cell.getAdjacentMines();
-                            btn.setText(String.valueOf(n));
-                            btn.setBackground(new Color(31, 46, 96));
-                            btn.setForeground(colorForNumber(n));
-                        }
-                        case EMPTY -> {
-                            btn.setText("");
-                            btn.setBackground(new Color(31, 46, 96));
-                            btn.setForeground(Color.WHITE);
-                        }
-                        case SURPRISE -> {
-                            if (cell.isUsedSpecial()) {
-                                btn.setText("USED");
-                                btn.setBackground(new Color(90, 90, 90));
-                                btn.setForeground(Color.WHITE);
-                            } else {
-                                btn.setText("S");
-                                btn.setBackground(new Color(186, 85, 211));
-                                btn.setForeground(Color.WHITE);
-                            }
-                        }
-                        case QUESTION -> {
-                            if (cell.isUsedSpecial()) {
-                                btn.setText("USED");
-                                btn.setBackground(new Color(90, 90, 90));
-                                btn.setForeground(Color.WHITE);
-                            } else {
-                                btn.setText("Q");
-                                btn.setBackground(new Color(255, 215, 0));
-                                btn.setForeground(Color.BLACK);
-                            }
-                        }
+                    continue;
+                }
 
+                // ===== REVEALED CELL =====
+                switch (cell.getType()) {
+                    case MINE -> {
+                        // BOMB ICON
+                        if (bombIcon != null) {
+                            btn.setIcon(bombIcon);
+                            btn.setText("");
+                        } else {
+                            btn.setText("M");
+                        }
+                        btn.setBackground(new Color(139, 0, 0));
+                        btn.setForeground(Color.WHITE);
+                    }
+
+                    case NUMBER -> {
+                        int n = cell.getAdjacentMines();
+                        btn.setText(String.valueOf(n));
+                        btn.setBackground(new Color(31, 46, 96));
+                        btn.setForeground(colorForNumber(n));
+                    }
+
+                    case EMPTY -> {
+                        btn.setText("");
+                        btn.setBackground(new Color(31, 46, 96));
+                        btn.setForeground(Color.WHITE);
+                    }
+
+                    case SURPRISE -> {
+                        if (cell.isUsedSpecial()) {
+                            btn.setText("USED");
+                            btn.setBackground(new Color(90, 90, 90));
+                            btn.setForeground(Color.WHITE);
+                        } else {
+                            btn.setText("S");
+                            btn.setBackground(new Color(186, 85, 211));
+                            btn.setForeground(Color.WHITE);
+                        }
+                    }
+
+                    case QUESTION -> {
+                        if (cell.isUsedSpecial()) {
+                            btn.setText("USED");
+                            btn.setBackground(new Color(90, 90, 90));
+                            btn.setForeground(Color.WHITE);
+                        } else {
+                            btn.setText("Q");
+                            btn.setBackground(new Color(255, 215, 0));
+                            btn.setForeground(Color.BLACK);
+                        }
                     }
                 }
             }
         }
     }
+
 
     private Color colorForNumber(int n) {
         return switch (n) {
