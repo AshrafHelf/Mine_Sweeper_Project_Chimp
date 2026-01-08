@@ -25,19 +25,28 @@ public class GameController {
     private final Game game;
     private final MainWindow window;
     private final QuestionService questionService;
+    private final GameObserver uiObserver;
 
     public GameController(GamePanel view,
                           GameEngine engine,
                           Game game,
                           MainWindow window,
                           QuestionService questionService) {
+
         this.view = view;
         this.engine = engine;
         this.game = game;
         this.window = window;
         this.questionService = questionService;
+
+        // ✅ Observer only reacts to GAME OVER
+        this.uiObserver = g -> showGameOverIfNeeded();
+
+        this.engine.addObserver(this.uiObserver);
+
         wire();
     }
+
 
     private void wire() {
 
