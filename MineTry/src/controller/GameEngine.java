@@ -11,6 +11,8 @@ import enums.CellType;
 import enums.Difficulty;
 import enums.GameState;
 import enums.QuestionLevel;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameEngine {
 
@@ -19,7 +21,8 @@ public class GameEngine {
 
 
     private final BoardGenerator boardGen;
-   
+    private final List<GameObserver> observers = new ArrayList<>();
+
     
     private final HistoryService history;  // kept for future use
     
@@ -111,7 +114,25 @@ public class GameEngine {
         if (game.getState() == GameState.RUNNING && boardCleared(board)) {
             finishGame(game, true);
         }
+
+        
     }
+    
+
+    public void addObserver(GameObserver o) {
+        if (o != null) observers.add(o);
+    }
+
+    public void removeObserver(GameObserver o) {
+        observers.remove(o);
+    }
+
+    private void notifyObservers(Game g) {
+        for (GameObserver o : observers) {
+            o.onGameChanged(g);
+        }
+    }
+
 
 
 
@@ -133,6 +154,7 @@ public class GameEngine {
         game.addToTeamScore(deltaScore);
         cell.setFlaggedscore(true);
         }
+
     }
 
 
@@ -273,159 +295,26 @@ public class GameEngine {
         Difficulty gDiff = game.getDifficulty();
         RandomGenerator rng = BoardGenerator.current();
 
-        int points = 0;
-        int heartsDelta = 0;
+        QuestionOutcomeTemplate template = switch (gDiff) {
+            case EASY   -> new EasyQuestionOutcomeTemplate();
+            case MEDIUM -> new MediumQuestionOutcomeTemplate();
+            case HARD   -> new HardQuestionOutcomeTemplate();
+        };
 
-        switch (gDiff) {
-            case EASY -> {
-                switch (qLevel) {
-                    case EASY -> {
-                        if (correct) {
-                            points = 3;
-                            heartsDelta = +1;
-                        } else {
-                            if (rng.nextBoolean()) {
-                                points = -3;   // OR nothing
-                            }
-                        }
-                    }
-                    case MEDIUM -> {
-                        if (correct) {
-                            points = 6;
-                            // TODO: reveal one mine cell somewhere
-                        } else {
-                            if (rng.nextBoolean()) {
-                                points = -6;   // OR nothing
-                            }
-                        }
-                    }
-                    case HARD -> {
-                        if (correct) {
-                            points = 10;
-                            // TODO: reveal a random 3x3 area
-                        } else {
-                            points = -10;
-                        }
-                    }
-                    case EXPERT -> {
-                        if (correct) {
-                            points = 15;
-                            heartsDelta = +2;
-                        } else {
-                            points = -15;
-                            heartsDelta = -1;
-                        }
-                    }
-                }
-            }
-            case MEDIUM -> {
-                switch (qLevel) {
-                    case EASY -> {
-                        if (correct) {
-                            points = 8;
-                            heartsDelta = +1;
-                        } else {
-                            points = -8;
-                        }
-                    }
-                    case MEDIUM -> {
-                        if (correct) {
-                            points = 10;
-                            heartsDelta = +1;
-                        } else {
-                            // (-10pts & -1♥) OR nothing
-                            if (rng.nextBoolean()) {
-                                points = -10;
-                                heartsDelta = -1;
-                            }
-                        }
-                    }
-                    case HARD -> {
-                        if (correct) {
-                            points = 15;
-                            heartsDelta = +1;
-                        } else {
-                            points = -15;
-                            heartsDelta = -1;
-                        }
-                    }
-                    case EXPERT -> {
-                        if (correct) {
-                            points = 20;
-                            heartsDelta = +2;
-                        } else {
-                            // either (-20 & -1♥) OR (-20 & -2♥)
-                            points = -20;
-                            heartsDelta = rng.nextBoolean() ? -1 : -2;
-                        }
-                    }
-                }
-            }
-            case HARD -> {
-                switch (qLevel) {
-                    case EASY -> {
-                        if (correct) {
-                            points = 10;
-                            heartsDelta = +1;
-                        } else {
-                            points = -10;
-                            heartsDelta = -1;
-                        }
-                    }
-                    case MEDIUM -> {
-                        if (correct) {
-                            points = 15;
-                            heartsDelta = rng.nextBoolean() ? +1 : +2;
-                        } else {
-                            points = -15;
-                            heartsDelta = rng.nextBoolean() ? -1 : -2;
-                        }
-                    }
-                    case HARD -> {
-                        if (correct) {
-                            points = 20;
-                            heartsDelta = +2;
-                        } else {
-                            points = -20;
-                            heartsDelta = -2;
-                        }
-                    }
-                    case EXPERT -> {
-                        if (correct) {
-                            points = 40;
-                            heartsDelta = +3;
-                        } else {
-                            points = -40;
-                            heartsDelta = -3;
-                        }
-                    }
-                }
-            }
+        Outcome out = template.decide(qLevel, correct, rng);
+
+        if (out.points() != 0) {
+            game.addToTeamScore(out.points());
+        }
+        if (out.heartsDelta() != 0) {
+            addLives(game, out.heartsDelta());
         }
 
-        if (points != 0) {
-            game.addToTeamScore(points);
-        }
-        if (heartsDelta != 0) {
-            addLives(game, heartsDelta);
-        }
+        String msg = template.buildMessage(correct, out);
 
-        // ------- build message for popup -------
-        StringBuilder sb = new StringBuilder();
-        sb.append(correct ? "Correct answer!\n" : "Wrong answer!\n");
-
-        if (points != 0) {
-            sb.append(points > 0 ? "+" : "").append(points).append(" pts\n");
-        }
-        if (heartsDelta != 0) {
-            sb.append(heartsDelta > 0 ? "+" : "").append(heartsDelta).append(" \u2665");
-        }
-        if (points == 0 && heartsDelta == 0) {
-            sb.append("No change in score or lives.");
-        }
-
-        return sb.toString();
+        return msg;
     }
+
 
 
     
@@ -441,6 +330,7 @@ public class GameEngine {
 
         // mark as USED so it can't be used again
         cell.setUsedSpecial(true);
+
 
         return msg;
     }
@@ -468,6 +358,7 @@ public class GameEngine {
 
         // mark as USED so it can't be activated again
         cell.setUsedSpecial(true);
+
 
         return msg;
     }
@@ -553,27 +444,23 @@ public class GameEngine {
     private void finishGame(Game game, boolean won) {
         game.setWon(won);
 
-        // If team won, convert remaining lives to points
         if (won) {
             int lives = game.getTeamLives();
-            if (lives > 0) {
-                game.addToTeamScore(lives * BONUS_PER_LIFE);
-            }
+            if (lives > 0) game.addToTeamScore(lives * BONUS_PER_LIFE);
         }
 
-        // lives are considered "used up" after conversion
         game.setTeamLives(0);
-
-        // reveal all cells on both boards and clear flags
         revealAllBoards(game);
-
         game.setState(GameState.OVER);
 
-        // 🔹 NEW: record the game in history
         if (history != null) {
             history.recordGame(game);
         }
+
+        // ✅ Notify observers ONLY once: when game is over
+        notifyObservers(game);
     }
+
 
 
     private void revealAllBoards(Game game) {

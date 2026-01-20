@@ -1,21 +1,21 @@
 ﻿ID,Question,Difficulty,A,B,C,D,Correct Answer
-1,Which of the following is a goal of Minesweeper?,1,reveal all cells including mines,reveal all non mine cells without losing all lives,place flags on every cell,finish as fast as possible,B
-2, In Minesweeper what does the number on a revealed cell represent?,1,The number of flags on the board,The number of mines in the 8 neighboring cells,The total number of mines on the board,The number of revealed cells so far,B
-3,What happens if you click directly on a mine in a normal Minesweeper game (without special rules),1,Nothing happens og,you gain a life ,the game end and you lose,all mines fly and disappear,C
-4,How do you usually mark a suspected mine on a cell?,1,by double clicking,by right clicking,by pressing the space bar,by pressing the letter N,B
-5,In our project how many players play together in one game?,1,two players,six players,seven players,one player,A
-6,A cell shows the number 3 What does this tell you?,2,There are 3 mines somewhere on the board,there are 3 mines among the 8 neighbors of that cell,there are 3 flags on the board,you have 3 lives left,B
-7,In our project what is special about the Question (Q) cells?,2,They always add points without risk,They open a multiple-choice question that can give or take points and lives,They immediately reveal all mines,They change the board difficulty,B
-8,What happens if you flag a cell that is NOT actually a mine at the end of the game,2,you lose points for each wrong flag,you gain points for trying hard,all flags are ignored,the game restarts,A
-9,What is the advantage of playing carefully near numbers instead of clicking random cells?,2,It reduces the chance to hit a mine and lose lives,It always guarantees a win,It increases the number of mines,It disables surprise cells,A
-10,In the two board cooperative game whose lives are affected when a player hits a mine?,2,Only the active player’s lives,Only the other player’s lives,No one’s lives are reduced,The shared team lives are reduced,D
-11,What is a good general strategy when you must choose between two cells with equal mine probability?,3,Always click the left cell,Place flags on both cells,Use global information from other areas to reduce the guess,Quit the game immediately,C
-12,In our project why is it important that the first click on a board is always safe (never a mine)?,3,It makes the game shorter,It ensures a fair start and avoids immediate random loss,It increases the number of mines,It disables surprise cells,B
-13,You see three adjacent numbered cells with values 1 2  and 1 in a straight line Sometimes this pattern helps you detect a specific mine position What is this technique generally called?,3,Random guessing,Pattern recognition / pattern solving,Brute-force clicking,Flag sweeping,B
-14,region of empty cells is revealed automatically (cascade) Which cells will definitely NOT be revealed by the cascade?,3,Mines,Question cells,surprise cells,number cells,A
-15,Why can flagging every suspected mine sometimes be a bad idea in a game with a shared team score?,3,Flags have no effect on score,Flags reduce the number of lives,"Wrong flags cost points, so aggressive flagging can reduce the final score",The game forbids flags completely,C
-16,When solving a Minesweeper board logically what is usually the best next step if all obvious safe moves are exhausted?,4,Pick a random unrevealed cell and click it,Flag all remaining cells as mines,Restart the game immediately,Look for advanced patterns and constraints in other parts of the board,D
-17,In a two-player cooperative Minesweeper what is a good strategy when the current player reaches a forced guess situation (no 100% safe move)?,4,Ignore the board and pass the turn,Always click the cell with the highest risk,Discuss with the teammate to combine information and choose the least risky cell,Always choose a Question cell instead,C
-18,In our extended game Question cells can both give and take lives and points Strategically when is it most reasonable to activate a Question cell?,4,When the team has many lives and needs a big score boost,Only when the team has 1 life left,At the very first move of the game,Never – Question cells are always bad,A
-19,Suppose the team has very low lives but high score and a Surprise cell is available Which strategy fits a risk averse (שונא סיכון) team?,4,Always activate the Surprise immediately,"Avoid using the Surprise, because losing a life can end the game",Place flags randomly instead,Reset the game,B
-20,In a fully solved Minesweeper board (no uncertainty left) what must be true about all non-mine cells?,4,They are all flagged,They are all revealed,They are all hidden,They are all Question cells,B
+1,What is the main goal of a functional requirement?,1,Describe what the system must do,Describe the programming language,Describe team salaries,Describe server hardware,A
+2,Which test type focuses on internal code paths and conditions?,1,Black box testing,White box testing,Acceptance testing,Exploratory testing,B
+3,In Scrum what is a Sprint?,1,A bug fixing tool,A database table,A fixed time iteration to deliver work,A design pattern,C
+4,Which document usually lists system requirements in an organized way?,1,Source code,SRS,User password list,CPU manual,B
+5,What is the purpose of a code review?,1,Improve quality and find issues early,Replace unit tests,Deploy to production,Increase network bandwidth,A
+6,Which is an example of a non-functional requirement?,2,System must allow user login,System must respond within 2 seconds,System must store player names,System must show a scoreboard,B
+7,What is equivalence partitioning used for?,2,Guarantee zero defects,Reduce number of test cases while keeping coverage,Create class diagrams automatically,Measure developer productivity,B
+8,Which maintenance type adds new features requested by users?,2,Corrective,Adaptive,Perfective,Emergency,C
+9,What is the key benefit of iterative development?,2,Early feedback and gradual improvement,No need for planning,No need for testing,Only one release at the end,A
+10,In a walkthrough who usually leads the meeting?,2,A database admin approves,A compiler runs tests,A customer signs off,The author presents the work,D
+11,A good use case description should primarily include,3,Steps between actor and system to reach a goal,Exact database indexes,Exact UI colors for every screen,The full source code,A
+12,Boundary value analysis is most useful when inputs,3,Are always text strings,Have minimum and maximum limits,Are randomly generated only,Never change over time,B
+13,What is the main risk of skipping regression testing?,3,New features cannot be coded,Old features may break after changes,CPU will overheat,Network cable will fail,B
+14,Which review type is the most formal with checklists and defined roles?,3,Inspection,Pair programming,Brainstorming,Daily standup,A
+15,"In layered architecture, what is the main purpose of layers?",3,Make UI slower intentionally,Avoid writing requirements,Separate responsibilities and reduce coupling,Replace all unit tests,C
+16,"Your Minesweeper app has two screens showing the same game state, and both must update after every move. Which design pattern matches this need?",4,Prototype,Adapter,Singleton,Observer,D
+17,"You need a common algorithm for showing a popup result, but each popup has a different title and icon. Which pattern fits best?",4,Flyweight,Bridge,Template Method,Facade,C
+18,"A requirement says the system must log every game result with time, difficulty, players, and score. Which is the best verification approach?",4,Review the stored history file and compare to expected records,Run only performance tests,Ask one user if it looks correct,Check only the GUI colors,A
+19,Two teams argue about whether a bug is in the model or the view. What practice reduces this confusion most?,4,Add more global variables,Clear separation of concerns using MVC boundaries,Remove all interfaces,Only test manually at the end,B
+20,A test fails only when the board is almost full of special cells. What is the best next step?,4,Ignore it because it is rare,Add targeted stress tests and analyze edge cases,Remove special cells from the game,Disable random generation forever,B
