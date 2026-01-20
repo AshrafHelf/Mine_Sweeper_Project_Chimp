@@ -1,9 +1,9 @@
 package view;
 
 import javax.swing.*;
-
 import model.Board;
 import model.Cell;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -11,16 +11,30 @@ import java.util.function.BiConsumer;
 
 public class BoardView extends JPanel {
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	private final int cols;
+    private static final long serialVersionUID = 1L;
+
+    private final int cols;
     private final int rows;
     private final JButton[][] buttons;
 
     private BiConsumer<Integer, Integer> onCellClick;       // left click = reveal
     private BiConsumer<Integer, Integer> onCellRightClick;  // right click = flag
+
+    // Icons
+    private final ImageIcon baseFlag = new ImageIcon(getClass().getClassLoader().getResource("img/flag.png"));
+    private final ImageIcon baseMine = new ImageIcon(getClass().getClassLoader().getResource("img/mine.png"));
+
+
+    // Jungle-ish palette
+    private static final Color TILE_HIDDEN = new Color(20, 32, 24);
+    private static final Color TILE_HIDDEN_BORDER = new Color(35, 60, 45);
+
+    private static final Color TILE_REVEALED = new Color(34, 52, 36);
+    private static final Color TILE_REVEALED_BORDER = new Color(60, 90, 70);
+
+    private static final Color TILE_USED = new Color(70, 70, 70);
+    private static final Color TILE_Q = new Color(195, 165, 40);
+    private static final Color TILE_S = new Color(120, 70, 160);
 
     public BoardView(int cols, int rows, String title) {
         this.cols = cols;
@@ -32,26 +46,28 @@ public class BoardView extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JLabel lblTitle = new JLabel(title);
-        lblTitle.setForeground(new Color(230, 230, 255));
+        lblTitle.setForeground(new Color(235, 235, 245));
         lblTitle.setFont(lblTitle.getFont().deriveFont(Font.BOLD, 16f));
+
         JPanel titlePanel = new JPanel(new BorderLayout());
         titlePanel.setOpaque(false);
         titlePanel.add(lblTitle, BorderLayout.WEST);
         add(titlePanel, BorderLayout.NORTH);
 
-        JPanel grid = new JPanel(new GridLayout(rows, cols, 2, 2));
-        grid.setBackground(new Color(15, 24, 54));
+        JPanel grid = new JPanel(new GridLayout(rows, cols, 3, 3));
+        grid.setOpaque(false);
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
+
                 JButton cellBtn = new JButton();
-                cellBtn.setPreferredSize(new Dimension(26, 26));
+                cellBtn.setPreferredSize(new Dimension(28, 28));
                 cellBtn.setMargin(new Insets(0, 0, 0, 0));
                 cellBtn.setFocusPainted(false);
-                cellBtn.setBorder(BorderFactory.createLineBorder(new Color(28, 39, 80)));
-                cellBtn.setBackground(new Color(23, 35, 74));
-                cellBtn.setForeground(Color.WHITE);
-                cellBtn.setFont(cellBtn.getFont().deriveFont(Font.BOLD, 12f));
+                cellBtn.setOpaque(true);
+                cellBtn.setContentAreaFilled(true);
+
+                styleHidden(cellBtn);
 
                 final int cc = c;
                 final int rr = r;
@@ -62,13 +78,9 @@ public class BoardView extends JPanel {
                         if (!cellBtn.isEnabled()) return;
 
                         if (SwingUtilities.isRightMouseButton(e)) {
-                            if (onCellRightClick != null) {
-                                onCellRightClick.accept(cc, rr);
-                            }
+                            if (onCellRightClick != null) onCellRightClick.accept(cc, rr);
                         } else if (SwingUtilities.isLeftMouseButton(e)) {
-                            if (onCellClick != null) {
-                                onCellClick.accept(cc, rr);
-                            }
+                            if (onCellClick != null) onCellClick.accept(cc, rr);
                         }
                     }
                 });
@@ -93,8 +105,38 @@ public class BoardView extends JPanel {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 buttons[r][c].setEnabled(enabled);
+                buttons[r][c].setCursor(enabled ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                        : Cursor.getDefaultCursor());
             }
         }
+    }
+    private void setFullIcon(JButton btn, ImageIcon baseIcon) {
+        if (baseIcon == null) {
+            btn.setIcon(null);
+            return;
+        }
+
+        int w = Math.max(1, btn.getWidth());
+        int h = Math.max(1, btn.getHeight());
+
+        // If not laid out yet, fallback to preferred size
+        if (w <= 1 || h <= 1) {
+            Dimension pref = btn.getPreferredSize();
+            w = Math.max(1, pref.width);
+            h = Math.max(1, pref.height);
+        }
+
+        Image img = baseIcon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        btn.setIcon(new ImageIcon(img));
+
+        btn.setText("");
+        btn.setHorizontalTextPosition(SwingConstants.CENTER);
+        btn.setVerticalTextPosition(SwingConstants.CENTER);
+
+        btn.setIconTextGap(0);
+        btn.setMargin(new Insets(0, 0, 0, 0));
+        btn.setBorderPainted(false); // optional if you want clean tiles
+        btn.setContentAreaFilled(true);
     }
 
     public void renderBoard(Board board) {
@@ -105,78 +147,127 @@ public class BoardView extends JPanel {
                 Cell cell = board.get(c, r);
                 JButton btn = buttons[r][c];
 
+                // reset
+                btn.setText("");
+                btn.setIcon(null);
+
                 if (cell == null) {
-                    btn.setText("");
-                    btn.setBackground(new Color(23, 35, 74));
+                    styleHidden(btn);
                     continue;
                 }
 
                 if (!cell.isRevealed()) {
-                    // HIDDEN CELL
+                    // HIDDEN
                     if (cell.isFlagged()) {
-                        btn.setText("F");
-                        btn.setBackground(new Color(200, 80, 80));
-                        btn.setForeground(Color.WHITE);
+                        styleFlagged(btn);
+
+                        // ✅ FULL-CELL FLAG ICON
+                        setFullIcon(btn, baseFlag);
                     } else {
-                        btn.setText("");
-                        btn.setBackground(new Color(23, 35, 74));
-                        btn.setForeground(Color.WHITE);
+                        styleHidden(btn);
                     }
+
                 } else {
-                    // REVEALED CELL
+                    // REVEALED
                     switch (cell.getType()) {
                         case MINE -> {
-                            btn.setText("M");
-                            btn.setBackground(new Color(139, 0, 0));
-                            btn.setForeground(Color.WHITE);
+                            styleMine(btn);
+
+                            // ✅ FULL-CELL MINE ICON
+                            setFullIcon(btn, baseMine);
                         }
+
                         case NUMBER -> {
                             int n = cell.getAdjacentMines();
+                            styleRevealed(btn);
                             btn.setText(String.valueOf(n));
-                            btn.setBackground(new Color(31, 46, 96));
                             btn.setForeground(colorForNumber(n));
                         }
+
                         case EMPTY -> {
-                            btn.setText("");
-                            btn.setBackground(new Color(31, 46, 96));
-                            btn.setForeground(Color.WHITE);
+                            styleRevealed(btn);
                         }
+
                         case SURPRISE -> {
                             if (cell.isUsedSpecial()) {
+                                styleUsed(btn);
                                 btn.setText("USED");
-                                btn.setBackground(new Color(90, 90, 90));
-                                btn.setForeground(Color.WHITE);
                             } else {
+                                styleSurprise(btn);
                                 btn.setText("S");
-                                btn.setBackground(new Color(186, 85, 211));
-                                btn.setForeground(Color.WHITE);
-                            }
-                        }
-                        case QUESTION -> {
-                            if (cell.isUsedSpecial()) {
-                                btn.setText("USED");
-                                btn.setBackground(new Color(90, 90, 90));
-                                btn.setForeground(Color.WHITE);
-                            } else {
-                                btn.setText("Q");
-                                btn.setBackground(new Color(255, 215, 0));
-                                btn.setForeground(Color.BLACK);
                             }
                         }
 
+                        case QUESTION -> {
+                            if (cell.isUsedSpecial()) {
+                                styleUsed(btn);
+                                btn.setText("USED");
+                            } else {
+                                styleQuestion(btn);
+                                btn.setText("Q");
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
+
+    private void styleHidden(JButton b) {
+        b.setBackground(TILE_HIDDEN);
+        b.setBorder(BorderFactory.createLineBorder(TILE_HIDDEN_BORDER));
+        b.setForeground(Color.WHITE);
+        b.setFont(b.getFont().deriveFont(Font.BOLD, 12f));
+    }
+
+    private void styleRevealed(JButton b) {
+        b.setBackground(TILE_REVEALED);
+        b.setBorder(BorderFactory.createLineBorder(TILE_REVEALED_BORDER));
+        b.setForeground(Color.WHITE);
+        b.setFont(b.getFont().deriveFont(Font.BOLD, 12f));
+    }
+
+    private void styleFlagged(JButton b) {
+        b.setBackground(new Color(30, 50, 35));
+        b.setBorder(BorderFactory.createLineBorder(new Color(90, 140, 110)));
+        b.setIcon(baseFlag);
+    }
+
+    private void styleMine(JButton b) {
+        b.setBackground(new Color(70, 20, 20));
+        b.setBorder(BorderFactory.createLineBorder(new Color(150, 60, 60)));
+        b.setIcon(baseMine);
+    }
+
+    private void styleUsed(JButton b) {
+        b.setBackground(TILE_USED);
+        b.setBorder(BorderFactory.createLineBorder(new Color(120, 120, 120)));
+        b.setForeground(Color.WHITE);
+        b.setFont(b.getFont().deriveFont(Font.BOLD, 10f));
+    }
+
+    private void styleQuestion(JButton b) {
+        b.setBackground(TILE_Q);
+        b.setBorder(BorderFactory.createLineBorder(new Color(235, 210, 120)));
+        b.setForeground(Color.BLACK);
+        b.setFont(b.getFont().deriveFont(Font.BOLD, 12f));
+    }
+
+    private void styleSurprise(JButton b) {
+        b.setBackground(TILE_S);
+        b.setBorder(BorderFactory.createLineBorder(new Color(190, 140, 220)));
+        b.setForeground(Color.WHITE);
+        b.setFont(b.getFont().deriveFont(Font.BOLD, 12f));
+    }
+
     private Color colorForNumber(int n) {
         return switch (n) {
-            case 1 -> new Color(72, 163, 255);
-            case 2 -> new Color(120, 200, 120);
-            case 3 -> new Color(255, 99, 132);
-            case 4 -> new Color(186, 85, 211);
-            case 5 -> new Color(255, 165, 0);
+            case 1 -> new Color(140, 210, 255);
+            case 2 -> new Color(150, 255, 170);
+            case 3 -> new Color(255, 150, 150);
+            case 4 -> new Color(220, 170, 255);
+            case 5 -> new Color(255, 210, 130);
             default -> Color.WHITE;
         };
     }

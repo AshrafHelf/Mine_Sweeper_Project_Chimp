@@ -18,9 +18,8 @@ public class MineCell extends Cell {
     }
     @Override
     public int scoreforFlag(boolean addedFlag) {
-    	if(!addedFlag)
-    		return 0;
-    	return -3;
-    	
+        if (!addedFlag) return 0;  // removing a flag doesn't change score (your current rule)
+        return +1;                 // ✅ correct mine flag reward
     }
+
 }

@@ -1,6 +1,8 @@
 package view;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicMenuBarUI;
+import javax.swing.plaf.basic.BasicMenuItemUI;
 
 import enums.Difficulty;
 import model.Game;
@@ -8,16 +10,14 @@ import model.GameRecord;
 import model.QuestionService;
 
 import java.awt.*;
+import java.net.URL;
 import java.util.List;
 
 public class MainWindow extends JFrame {
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public interface NewGameListener {
+    public interface NewGameListener {
         void start(Difficulty difficulty, String p1, String p2);
     }
 
@@ -29,14 +29,31 @@ public class MainWindow extends JFrame {
     private final JPanel root = new JPanel(cards);
     private final MainMenuPanel menu = new MainMenuPanel();
 
+    // --- Admin passcode (simple version)
+    private static final String ADMIN_PASSCODE = "1234";
+    private boolean adminUnlocked = false;
+
+    // --- Theme colors
+    private static final Color BG_DARK = new Color(10, 12, 18);
+    private static final Color BAR_BG  = new Color(14, 18, 28);
+    private static final Color TEXT    = new Color(235, 235, 245);
+    private static final Color MUTED   = new Color(160, 170, 190);
+    private static final Color ACCENT  = new Color(76, 175, 80); // jungle green
+
     public MainWindow() {
-        super("Minesweeper");
+        super("Minesweeper – Jungle Co-op");
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 700);
-        setLocationByPlatform(true);
+        setMinimumSize(new Dimension(1000, 700));
+        setLocationRelativeTo(null); // center on screen
 
         setContentPane(root);
+        root.setBackground(BG_DARK);
+
         root.add(menu, "menu");
+
+        // 🔥 App icon (shows on window + taskbar)
+        setAppIcon("mine.png"); // or "gorilla.png" if you have it
 
         buildMenuBar();
         wireMenuPanel();
@@ -44,24 +61,46 @@ public class MainWindow extends JFrame {
         cards.show(root, "menu");
     }
 
-    // --- Top menu bar ---
+    // -------------------------
+    // Menu bar
+    // -------------------------
 
     private void buildMenuBar() {
         JMenuBar bar = new JMenuBar();
+        bar.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        bar.setBackground(BAR_BG);
+        bar.setOpaque(true);
+
+        // If Nimbus tries to paint gradients, we force a flat paint
+        bar.setUI(new BasicMenuBarUI() {
+            @Override public void paint(Graphics g, JComponent c) {
+                g.setColor(BAR_BG);
+                g.fillRect(0, 0, c.getWidth(), c.getHeight());
+            }
+        });
 
         JMenu game = new JMenu("Game");
+        JMenu help = new JMenu("Help");
+
+        styleMenu(game);
+        styleMenu(help);
 
         JMenuItem scores = new JMenuItem("History");
+        JMenuItem qadmin = new JMenuItem("Questions");
+        JMenuItem exit   = new JMenuItem("Exit");
+
+        styleMenuItem(scores);
+        styleMenuItem(qadmin);
+        styleMenuItem(exit);
+
         scores.addActionListener(e -> {
             if (openHistoryListener != null) openHistoryListener.run();
         });
 
-        JMenuItem qadmin = new JMenuItem("Questions");
         qadmin.addActionListener(e -> {
             if (openQuestionsListener != null) openQuestionsListener.run();
         });
 
-        JMenuItem exit = new JMenuItem("Exit");
         exit.addActionListener(e -> dispose());
 
         game.add(scores);
@@ -69,8 +108,8 @@ public class MainWindow extends JFrame {
         game.addSeparator();
         game.add(exit);
 
-        JMenu help = new JMenu("Help");
         JMenuItem about = new JMenuItem("About");
+        styleMenuItem(about);
         about.addActionListener(e -> showAboutDialog());
         help.add(about);
 
@@ -80,31 +119,71 @@ public class MainWindow extends JFrame {
         setJMenuBar(bar);
     }
 
+    private void styleMenu(JMenu menu) {
+        menu.setForeground(TEXT);
+        menu.setFont(menu.getFont().deriveFont(Font.BOLD, 13f));
+        menu.setOpaque(true);
+        menu.setBackground(BAR_BG);
+    }
+
+    private void styleMenuItem(JMenuItem item) {
+        item.setForeground(TEXT);
+        item.setBackground(BAR_BG);
+        item.setOpaque(true);
+        item.setFont(item.getFont().deriveFont(13f));
+
+        // Better hover/selection look
+        item.setUI(new BasicMenuItemUI() {
+            @Override
+            protected void paintBackground(Graphics g, JMenuItem c, Color bgColor) {
+                ButtonModel model = c.getModel();
+                if (model.isArmed() || model.isSelected()) {
+                    g.setColor(new Color(24, 30, 44));
+                } else {
+                    g.setColor(BAR_BG);
+                }
+                g.fillRect(0, 0, c.getWidth(), c.getHeight());
+            }
+
+            @Override
+            protected void paintText(Graphics g, JMenuItem menuItem, Rectangle textRect, String text) {
+                g.setFont(menuItem.getFont());
+                g.setColor(menuItem.getModel().isArmed() ? ACCENT : TEXT);
+                FontMetrics fm = g.getFontMetrics();
+                int y = textRect.y + fm.getAscent();
+                g.drawString(text, textRect.x, y);
+            }
+        });
+    }
+
+    // -------------------------
+    // About dialog
+    // -------------------------
+
     private void showAboutDialog() {
         JDialog dlg = new JDialog(this, "About Minesweeper", true);
         dlg.setLayout(new BorderLayout());
-        dlg.getContentPane().setBackground(new Color(12, 16, 35));
+        dlg.getContentPane().setBackground(BG_DARK);
 
         JPanel content = new JPanel();
-        content.setBackground(new Color(12, 16, 35));
+        content.setBackground(BG_DARK);
         content.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 
-        JLabel title = new JLabel("Minesweeper – Two Player Edition");
-        title.setForeground(new Color(235, 235, 255));
+        JLabel title = new JLabel("Minesweeper – Jungle Co-op Edition");
+        title.setForeground(TEXT);
         title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
 
-        JLabel subtitle = new JLabel("Project for Minesweeper with questions and surprises.");
-        subtitle.setForeground(new Color(190, 195, 220));
+        JLabel subtitle = new JLabel("Two boards • shared lives • Q & S special cells");
+        subtitle.setForeground(MUTED);
 
         JLabel authors = new JLabel("Developed by: Chimp");
-        authors.setForeground(new Color(170, 175, 205));
+        authors.setForeground(MUTED);
 
         JLabel info = new JLabel("<html>" +
-                "• Two boards, cooperative play.<br/>" +
-                "• Shared lives and team score.<br/>" +
-                "• Question cells (Q) and surprise cells (S).<br/>" +
-                "• Admin screens for questions and game history." +
+                "• Question cells (Q): activation cost + outcomes<br/>" +
+                "• Surprise cells (S): activation cost + random good/bad<br/>" +
+                "• Admin: question bank + game history" +
                 "</html>");
         info.setForeground(new Color(200, 205, 230));
 
@@ -116,7 +195,7 @@ public class MainWindow extends JFrame {
         content.add(title);
         content.add(Box.createVerticalStrut(6));
         content.add(subtitle);
-        content.add(Box.createVerticalStrut(4));
+        content.add(Box.createVerticalStrut(8));
         content.add(authors);
         content.add(Box.createVerticalStrut(12));
         content.add(info);
@@ -128,7 +207,7 @@ public class MainWindow extends JFrame {
         ok.addActionListener(e -> dlg.dispose());
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        bottom.setBackground(new Color(12, 16, 35));
+        bottom.setBackground(BG_DARK);
         bottom.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 12));
         bottom.add(ok);
 
@@ -140,7 +219,9 @@ public class MainWindow extends JFrame {
         dlg.setVisible(true);
     }
 
-    // --- Wiring main menu panel to callbacks ---
+    // -------------------------
+    // Wiring menu panel to callbacks
+    // -------------------------
 
     private void wireMenuPanel() {
         menu.setOnStart((diff, p1, p2) -> {
@@ -158,7 +239,9 @@ public class MainWindow extends JFrame {
         menu.setOnExit(this::dispose);
     }
 
-    // --- Public callbacks used by controllers ---
+    // -------------------------
+    // Public callbacks used by controllers
+    // -------------------------
 
     public void onNewGame(NewGameListener l) {
         this.newGameListener = l;
@@ -180,10 +263,10 @@ public class MainWindow extends JFrame {
     }
 
     public void showQuestionAdmin(QuestionService qService) {
+        if (!requireAdminPasscode()) return;
         QuestionAdminDialog dialog = new QuestionAdminDialog(this, qService);
         dialog.setVisible(true);
     }
-
 
     public void showHistory(List<GameRecord> records) {
         HistoryDialog dialog = new HistoryDialog(this, records);
@@ -192,5 +275,54 @@ public class MainWindow extends JFrame {
 
     public void showMenu() {
         cards.show(root, "menu");
+    }
+
+    // -------------------------
+    // Admin passcode
+    // -------------------------
+
+    private boolean requireAdminPasscode() {
+        if (adminUnlocked) return true;
+
+        JPasswordField pf = new JPasswordField();
+        pf.setEchoChar('•');
+
+        int ok = JOptionPane.showConfirmDialog(
+                this,
+                pf,
+                "Enter Admin Passcode",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (ok != JOptionPane.OK_OPTION) return false;
+
+        String entered = new String(pf.getPassword()).trim();
+
+        if (!ADMIN_PASSCODE.equals(entered)) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Wrong passcode.",
+                    "Access denied",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return false;
+        }
+
+        adminUnlocked = true;
+        return true;
+    }
+
+    // -------------------------
+    // Resource helpers
+    // -------------------------
+
+    private void setAppIcon(String fileName) {
+        URL url = MainWindow.class.getClassLoader().getResource("img/" + fileName);
+        if (url != null) {
+            setIconImage(new ImageIcon(url).getImage());
+        } else {
+            System.out.println("⚠ App icon not found: img/" + fileName);
+        }
     }
 }

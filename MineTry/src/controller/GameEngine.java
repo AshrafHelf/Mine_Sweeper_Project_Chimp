@@ -315,25 +315,38 @@ public class GameEngine {
         return msg;
     }
 
+    
+    private int activationCostFor(Difficulty diff) {
+        return switch (diff) {
+            case EASY -> 5;
+            case MEDIUM -> 8;
+            case HARD -> 12;
+        };
+    }
+
 
 
     
     public String activateQuestion(Game game, Cell cell, QuestionLevel level, boolean correct) {
-        // Only revealed, unused QUESTION cells can be activated
+
         if (!cell.isRevealed()
                 || cell.getType() != CellType.QUESTION
                 || cell.isUsedSpecial()) {
             return null;
         }
 
+        // ✅ Pay activation cost (same as Surprise)
+        int cost = activationCostFor(game.getDifficulty());
+        game.addToTeamScore(-cost);
+
         String msg = applyQuestionOutcome(game, level, correct);
 
-        // mark as USED so it can't be used again
         cell.setUsedSpecial(true);
 
-
-        return msg;
+        // optional: include cost in message so user sees it
+        return "Activation cost: -" + cost + " pts\n" + msg;
     }
+
 
 
 
@@ -354,11 +367,19 @@ public class GameEngine {
             return null;
         }
 
-        String msg = applySurpriseEffect(game);
+        // ✅ Pay activation cost HERE
+        int activationCost = switch (game.getDifficulty()) {
+            case EASY -> 5;
+            case MEDIUM -> 8;
+            case HARD -> 12;
+        };
+        game.addToTeamScore(-activationCost);
+
+        // apply effect (good/bad) and build message
+        String msg = applySurpriseEffect(game, activationCost);
 
         // mark as USED so it can't be activated again
         cell.setUsedSpecial(true);
-
 
         return msg;
     }
@@ -366,35 +387,18 @@ public class GameEngine {
 
 
 
+
+
     
  // Surprise activation logic according to difficulty
-    private String applySurpriseEffect(Game game) {
+    private String applySurpriseEffect(Game game, int activationCost) {
         Difficulty diff = game.getDifficulty();
 
-        int activationCost;
-        int surprisePoints;
-
-        switch (diff) {
-            case EASY -> {
-                activationCost = 5;
-                surprisePoints = 8;
-            }
-            case MEDIUM -> {
-                activationCost = 8;
-                surprisePoints = 12;
-            }
-            case HARD -> {
-                activationCost = 12;
-                surprisePoints = 16;
-            }
-            default -> {
-                activationCost = 5;
-                surprisePoints = 8;
-            }
-        }
-
-        // Pay activation cost
-        game.addToTeamScore(-activationCost);
+        int surprisePoints = switch (diff) {
+            case EASY -> 8;
+            case MEDIUM -> 12;
+            case HARD -> 16;
+        };
 
         RandomGenerator rng = BoardGenerator.current();
         boolean good = rng.nextBoolean(); // 50-50 good / bad
@@ -406,17 +410,21 @@ public class GameEngine {
         if (good) {
             heartsDelta = +1;
             pointsDelta = surprisePoints;
-            if(lives <10) {
-            lives += 1;
+
+            if (lives < 10) {
+                lives += 1;
+            } else {
+                // already max lives -> extra bonus points
+                pointsDelta += 5;
             }
-            else {
-            	pointsDelta+=5;
-            }
+
             game.setTeamLives(lives);
             game.addToTeamScore(pointsDelta);
+
         } else {
             heartsDelta = -1;
             pointsDelta = -surprisePoints;
+
             lives -= 1;
             game.setTeamLives(lives);
             game.addToTeamScore(pointsDelta);
@@ -430,11 +438,13 @@ public class GameEngine {
 
         StringBuilder sb = new StringBuilder();
         sb.append(good ? "Good surprise!\n" : "Bad surprise!\n");
+        sb.append("Activation cost: -").append(activationCost).append(" pts\n");
         sb.append(netPoints >= 0 ? "+" : "").append(netPoints).append(" pts total\n");
         sb.append(heartsDelta > 0 ? "+" : "").append(heartsDelta).append(" \u2665");
 
         return sb.toString();
     }
+
 
 
 

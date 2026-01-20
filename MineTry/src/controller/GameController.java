@@ -47,7 +47,6 @@ public class GameController {
         wire();
     }
 
-
     private void wire() {
 
         // Back / Restart
@@ -91,6 +90,12 @@ public class GameController {
                         // activate surprise (good/bad heart + points)
                         String msg = engine.activateSurprise(game, c, r);
 
+                        // ✅ push to HUD feed
+                        if (msg != null) {
+                            view.pushEvent(msg);
+                        }
+
+                        // popup optional (keep it if you like)
                         if (msg != null && window != null) {
                             JOptionPane.showMessageDialog(
                                     window,
@@ -131,6 +136,11 @@ public class GameController {
                         // 4) apply scoring & hearts
                         String msg = engine.activateQuestion(game, cell, q.getLevel(), correct);
 
+                        // ✅ push to HUD feed
+                        if (msg != null) {
+                            view.pushEvent(msg);
+                        }
+
                         if (msg != null && window != null) {
                             JOptionPane.showMessageDialog(
                                     window,
@@ -152,8 +162,6 @@ public class GameController {
             view.refreshFromModel();
             showGameOverIfNeeded();
         });
-
-        
 
         // ==========================
         // RIGHT CLICK = flag / unflag
@@ -213,6 +221,4 @@ public class GameController {
         GameOverDialog dlg = new GameOverDialog(owner, won, finalScore);
         dlg.setVisible(true);
     }
-    
-    
 }
