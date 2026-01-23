@@ -2,9 +2,9 @@ package view;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-
+import view.theme.Theme;
+import view.theme.UIFactory;
 import enums.Difficulty;
-
 import java.awt.*;
 import java.net.URL;
 
@@ -114,26 +114,28 @@ public class MainMenuPanel extends JPanel {
         content.setBorder(new EmptyBorder(30, 30, 30, 30));
 
         // Title
-        JLabel title = new JLabel("MINESWEEPER");
+        JLabel title = UIFactory.title("CHIMP SWEEPER");
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        title.setForeground(new Color(245, 245, 245));
-        title.setFont(new Font("Serif", Font.BOLD, 52));
 
-        JLabel subtitle = new JLabel("JUNGLE CO-OP EDITION");
+        JLabel subtitle = UIFactory.subtitle("Jungle Co-Op Minesweeper • Team Chimp");
         subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subtitle.setForeground(new Color(200, 200, 200));
-        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 16));
+
 
         content.add(title);
         content.add(Box.createVerticalStrut(6));
         content.add(subtitle);
         content.add(Box.createVerticalStrut(26));
+        content.add(Box.createVerticalStrut(18));
+        content.add(chimpPicker());
+        content.add(Box.createVerticalStrut(18));
+
 
         // Buttons (center list style)
-        JButton newGameBtn = menuButton("NEW GAME");
-        JButton historyBtn  = menuButton("HISTORY");
-        JButton questionsBtn= menuButton("QUESTIONS");
-        JButton quitBtn     = menuButton("QUIT");
+        JButton newGameBtn  = UIFactory.woodButton("START GAME 🍌");
+        JButton historyBtn  = UIFactory.woodButton("HISTORY");
+        JButton questionsBtn= UIFactory.woodButton("QUESTIONS");
+        JButton quitBtn     = UIFactory.woodButton("QUIT");
+
 
         content.add(newGameBtn);
         content.add(Box.createVerticalStrut(12));
@@ -144,10 +146,12 @@ public class MainMenuPanel extends JPanel {
         content.add(quitBtn);
         content.add(Box.createVerticalStrut(26));
 
-        // Settings block (like your 3rd pic)
-        JPanel settings = new JPanel(new GridBagLayout());
-        settings.setOpaque(false);
-        settings.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel settingsInner = new JPanel(new GridBagLayout());
+        settingsInner.setOpaque(false);
+
+        JPanel settings = UIFactory.woodCard();
+        settings.add(settingsInner);
+
 
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(6, 6, 6, 6);
@@ -166,16 +170,17 @@ public class MainMenuPanel extends JPanel {
         styleField(player1Field);
         styleField(player2Field);
 
-        c.gridx = 0; c.gridy = 0; settings.add(diffLbl, c);
-        c.gridx = 1; c.gridy = 0; settings.add(difficultyBox, c);
+        c.gridx = 0; c.gridy = 0; settingsInner.add(diffLbl, c);
+        c.gridx = 1; c.gridy = 0; settingsInner.add(difficultyBox, c);
 
-        c.gridx = 0; c.gridy = 1; settings.add(p1Lbl, c);
-        c.gridx = 1; c.gridy = 1; settings.add(player1Field, c);
+        c.gridx = 0; c.gridy = 1; settingsInner.add(p1Lbl, c);
+        c.gridx = 1; c.gridy = 1; settingsInner.add(player1Field, c);
 
-        c.gridx = 0; c.gridy = 2; settings.add(p2Lbl, c);
-        c.gridx = 1; c.gridy = 2; settings.add(player2Field, c);
+        c.gridx = 0; c.gridy = 2; settingsInner.add(p2Lbl, c);
+        c.gridx = 1; c.gridy = 2; settingsInner.add(player2Field, c);
 
         content.add(settings);
+
 
         // Difficulty description (back again)
         diffInfo = new JTextArea(4, 28);
@@ -238,10 +243,11 @@ public class MainMenuPanel extends JPanel {
 
     private JLabel label(String txt) {
         JLabel l = new JLabel(txt);
-        l.setForeground(new Color(210, 210, 210));
-        l.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        l.setForeground(Theme.TEXT_MUTED);
+        l.setFont(Theme.BODY);
         return l;
     }
+
 
     private JButton menuButton(String text) {
         JButton b = new JButton(text);
@@ -279,20 +285,23 @@ public class MainMenuPanel extends JPanel {
     }
 
     private void styleField(JTextField f) {
-        f.setBackground(new Color(0, 0, 0, 140));
-        f.setForeground(Color.WHITE);
-        f.setCaretColor(Color.WHITE);
+        f.setBackground(new Color(0, 0, 0, 120));
+        f.setForeground(Theme.TEXT);
+        f.setCaretColor(Theme.TEXT);
+        f.setFont(Theme.BODY);
         f.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(255, 255, 255, 60)),
-                new EmptyBorder(6, 10, 6, 10)
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 45)),
+                new EmptyBorder(8, 10, 8, 10)
         ));
     }
 
     private void styleCombo(JComboBox<?> cb) {
-        cb.setBackground(new Color(0, 0, 0, 140));
-        cb.setForeground(Color.WHITE);
-        cb.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255, 60)));
+        cb.setBackground(new Color(0, 0, 0, 120));
+        cb.setForeground(Theme.TEXT);
+        cb.setFont(Theme.BODY);
+        cb.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255, 45)));
     }
+
 
     private String describeDifficulty(Difficulty diff) {
         if (diff == null) return "";
@@ -314,4 +323,83 @@ public class MainMenuPanel extends JPanel {
                     • Many Q and S cells (big rewards).""";
         };
     }
+    
+    private JPanel chimpPicker() {
+        JPanel wrap = new JPanel();
+        wrap.setOpaque(false);
+        wrap.setLayout(new BoxLayout(wrap, BoxLayout.Y_AXIS));
+        wrap.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel t = UIFactory.subtitle("Choose your Chimp");
+        t.setAlignmentX(Component.CENTER_ALIGNMENT);
+        wrap.add(t);
+        wrap.add(Box.createVerticalStrut(10));
+
+        JPanel grid = new JPanel(new GridLayout(2, 3, 10, 10));
+        grid.setOpaque(false);
+
+        String[] chimps = {
+                "Banana Lover", "Jungle Ninja", "Smart Scout",
+                "Pirate Chimp", "Forest Mage", "Cool Skater"
+        };
+
+        ButtonGroup group = new ButtonGroup();
+        for (int i = 0; i < chimps.length; i++) {
+            JToggleButton b = new JToggleButton(chimps[i]);
+            b.setFont(Theme.BODY.deriveFont(Font.BOLD, 13f));
+            b.setFocusPainted(false);
+            b.setBorderPainted(false);
+            b.setContentAreaFilled(false);
+            b.setOpaque(false);
+            b.setForeground(Theme.TEXT);
+
+            // Make toggle look like a mini wood chip
+            b.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+                @Override
+                public void paint(Graphics g, JComponent c) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                    AbstractButton ab = (AbstractButton) c;
+                    int w = c.getWidth(), h = c.getHeight();
+                    boolean on = ab.isSelected();
+                    boolean hover = ab.getModel().isRollover();
+
+                    Color base = on ? Theme.BANANA : Theme.WOOD_DARK;
+                    Color top  = on ? new Color(255, 236, 150) : new Color(92, 62, 35);
+
+                    if (hover && !on) {
+                        base = new Color(95, 68, 40);
+                        top  = new Color(110, 78, 46);
+                    }
+
+                    g2.setColor(new Color(0,0,0,90));
+                    g2.fillRoundRect(2, 3, w-4, h-4, 16, 16);
+
+                    g2.setPaint(new GradientPaint(0, 0, top, 0, h, base));
+                    g2.fillRoundRect(0, 0, w-4, h-4, 16, 16);
+
+                    g2.setColor(new Color(255,255,255,35));
+                    g2.drawRoundRect(1, 1, w-6, h-6, 16, 16);
+
+                    g2.dispose();
+                    super.paint(g, c);
+                }
+            });
+
+            if (i == 0) b.setSelected(true);
+            group.add(b);
+            grid.add(b);
+        }
+
+        // Give each chip a consistent size
+        Dimension chipSize = new Dimension(150, 42);
+        for (Component c : grid.getComponents()) {
+            c.setPreferredSize(chipSize);
+        }
+
+        wrap.add(grid);
+        return wrap;
+    }
+
 }

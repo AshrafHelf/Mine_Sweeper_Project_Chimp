@@ -27,7 +27,10 @@ public class MainWindow extends JFrame {
 
     private final CardLayout cards = new CardLayout();
     private final JPanel root = new JPanel(cards);
-    private final MainMenuPanel menu = new MainMenuPanel();
+    private final SplashPanel splash = new SplashPanel();
+    private final HomePanel home = new HomePanel();
+    private final MainMenuPanel menu = new MainMenuPanel(); // this is now the SETUP screen
+
 
     // --- Admin passcode (simple version)
     private static final String ADMIN_PASSCODE = "1234";
@@ -50,13 +53,15 @@ public class MainWindow extends JFrame {
         setContentPane(root);
         root.setBackground(BG_DARK);
 
-        root.add(menu, "menu");
-
-        // 🔥 App icon (shows on window + taskbar)
-        setAppIcon("mine.png"); // or "gorilla.png" if you have it
+        root.add(splash, "splash");
+        root.add(home, "home");
+        root.add(menu, "setup");
 
         buildMenuBar();
+        wireSplashPanel();
+        wireHomePanel();
         wireMenuPanel();
+
 
         cards.show(root, "menu");
     }
@@ -261,6 +266,23 @@ public class MainWindow extends JFrame {
         cards.show(root, "game");
         return gamePanel;
     }
+    private void wireSplashPanel() {
+        splash.setOnContinue(() -> cards.show(root, "home"));
+    }
+
+    private void wireHomePanel() {
+        home.setOnPlay(() -> cards.show(root, "setup"));
+
+        home.setOnHistory(() -> {
+            if (openHistoryListener != null) openHistoryListener.run();
+        });
+
+        home.setOnQuestions(() -> {
+            if (openQuestionsListener != null) openQuestionsListener.run();
+        });
+
+        home.setOnExit(this::dispose);
+    }
 
     public void showQuestionAdmin(QuestionService qService) {
         if (!requireAdminPasscode()) return;
@@ -274,7 +296,7 @@ public class MainWindow extends JFrame {
     }
 
     public void showMenu() {
-        cards.show(root, "menu");
+        cards.show(root, "home");
     }
 
     // -------------------------
