@@ -33,6 +33,8 @@ public class SplashPanel extends JPanel {
         // --- card ---
         JPanel card = glassCard();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setMaximumSize(new Dimension(860, 260)); // tweak width/height as you like
+
 
         // --- TITLE ROW: title + splash overlay like Minecraft ---
         JComponent titleBlock = buildTitleWithSplash();
@@ -68,7 +70,7 @@ public class SplashPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(0, 70, 0, 70);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.fill = GridBagConstraints.NONE;
         bg.add(card, gbc);
 
         // Click anywhere (attach to bg, not only panel)
@@ -127,17 +129,34 @@ public class SplashPanel extends JPanel {
         super.paintComponent(g);
 
         Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // subtle readability overlay
-        g2.setComposite(AlphaComposite.SrcOver.derive(0.12f));
+        int w = getWidth(), h = getHeight();
+
+        // --- Cinematic gradient overlay (darkens edges + improves readability) ---
+        // top fade
+        g2.setComposite(AlphaComposite.SrcOver.derive(0.18f));
+        g2.setPaint(new GradientPaint(0, 0, new Color(0,0,0,200), 0, h/2f, new Color(0,0,0,0)));
+        g2.fillRect(0, 0, w, h);
+
+        // bottom fade
+        g2.setComposite(AlphaComposite.SrcOver.derive(0.22f));
+        g2.setPaint(new GradientPaint(0, h, new Color(0,0,0,220), 0, h/2f, new Color(0,0,0,0)));
+        g2.fillRect(0, 0, w, h);
+
+        // subtle vignette
+        g2.setComposite(AlphaComposite.SrcOver.derive(0.10f));
         g2.setColor(Color.BLACK);
-        g2.fillRect(0, 0, getWidth(), getHeight());
+        g2.fillRect(0, 0, w, 12);
+        g2.fillRect(0, h-12, w, 12);
+        g2.fillRect(0, 0, 12, h);
+        g2.fillRect(w-12, 0, 12, h);
 
-        // Fade overlay
+        // --- Fade from black (keep your fade) ---
         if (fadeAlpha > 0f) {
             g2.setComposite(AlphaComposite.SrcOver.derive(fadeAlpha));
             g2.setColor(Color.BLACK);
-            g2.fillRect(0, 0, getWidth(), getHeight());
+            g2.fillRect(0, 0, w, h);
         }
 
         g2.dispose();
@@ -273,7 +292,7 @@ public class SplashPanel extends JPanel {
                 g2.fillRoundRect(6, 6, getWidth() - 6, getHeight() - 6, arc, arc);
 
                 // glass
-                g2.setColor(new Color(0, 0, 0, 110));
+                g2.setColor(new Color(10, 10, 10, 140));
                 g2.fillRoundRect(0, 0, getWidth() - 6, getHeight() - 6, arc, arc);
 
                 // border highlight
@@ -431,24 +450,35 @@ public class SplashPanel extends JPanel {
             boolean hover = getModel().isRollover();
             boolean press = getModel().isPressed();
 
+            int w = getWidth();
+            int h = getHeight();
             int arc = 16;
 
-            // shadow
-            g2.setColor(new Color(0,0,0,70));
-            g2.fillRoundRect(4, 5, getWidth()-8, getHeight()-8, arc, arc);
+            int shadowOffset = 4;
+            int pressOffset  = press ? 2 : 0;
 
-            // base
-            g2.setColor(hover ? new Color(30, 30, 30, 190) : new Color(20, 20, 20, 170));
-            if (press) g2.setColor(new Color(15, 15, 15, 210));
-            g2.fillRoundRect(0, 0, getWidth()-8, getHeight()-8, arc, arc);
+            // shadow (slightly down/right)
+            g2.setColor(new Color(0, 0, 0, 90));
+            g2.fillRoundRect(shadowOffset, shadowOffset + pressOffset, w - shadowOffset, h - shadowOffset, arc, arc);
+
+            // base (FULL AREA so text is perfectly centered)
+            Color base = hover ? new Color(30, 80, 45, 190) : new Color(20, 60, 35, 170);
+            if (press) base = new Color(15, 45, 25, 210);
+
+            g2.setColor(base);
+            g2.fillRoundRect(0, pressOffset, w - shadowOffset, h - shadowOffset, arc, arc);
 
             // border
-            g2.setColor(new Color(255,255,255,55));
+            g2.setColor(new Color(255, 255, 255, 60));
             g2.setStroke(new BasicStroke(2f));
-            g2.drawRoundRect(1, 1, getWidth()-10, getHeight()-10, arc, arc);
+            g2.drawRoundRect(1, pressOffset + 1, w - shadowOffset - 2, h - shadowOffset - 2, arc, arc);
 
             g2.dispose();
+
+            // draw text AFTER, Swing centers it correctly
             super.paintComponent(g);
         }
     }
+    
+
 }

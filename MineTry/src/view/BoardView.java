@@ -13,69 +13,78 @@ public class BoardView extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    // ===== Premium sizing =====
+    // If you change TILE, EVERYTHING stays consistent (icons, fonts, layout)
+    private static final int TILE = 42;
+    private static final int GAP  = 1; // 0 looks too "stuck". 1 looks premium + still tight.
+    private static final Dimension CELL_SIZE = new Dimension(TILE, TILE);
+
+    // Icon should fill the tile without clipping the rounded border
+    private static final int ICON_PAD = 2;                 // breathing room inside tile
+    private static final int ICON_SIZE = TILE - ICON_PAD;  // was TILE-6, but our paint now uses full tile -> perfect
+
     private final int cols;
     private final int rows;
-    private final JButton[][] buttons;
+    private final TileButton[][] buttons;
 
-    private BiConsumer<Integer, Integer> onCellClick;       // left click = reveal
-    private BiConsumer<Integer, Integer> onCellRightClick;  // right click = flag
+    private BiConsumer<Integer, Integer> onCellClick;
+    private BiConsumer<Integer, Integer> onCellRightClick;
 
-    // Icons
-    private final ImageIcon baseFlag = new ImageIcon(getClass().getClassLoader().getResource("img/flag.png"));
-    private final ImageIcon baseMine = new ImageIcon(getClass().getClassLoader().getResource("img/mine.png"));
+    // Icons cached via UiAssets (theme icons)
+    private final ImageIcon flagIcon = safeIcon("bananaflag.png", ICON_SIZE, ICON_SIZE);
+    private final ImageIcon mineIcon = safeIcon("mine1.png", ICON_SIZE, ICON_SIZE);
+    // Optional: you can add more icons later (Q/S/used), but text is fine.
 
+    // ===== Jungle palette =====
+    private static final Color TILE_HIDDEN        = new Color(18, 30, 22);
+    private static final Color TILE_HIDDEN_BORDER = new Color(55, 95, 70);
 
-    // Jungle-ish palette
-    private static final Color TILE_HIDDEN = new Color(20, 32, 24);
-    private static final Color TILE_HIDDEN_BORDER = new Color(35, 60, 45);
+    private static final Color TILE_REVEALED        = new Color(32, 48, 34);
+    private static final Color TILE_REVEALED_BORDER = new Color(85, 130, 100);
 
-    private static final Color TILE_REVEALED = new Color(34, 52, 36);
-    private static final Color TILE_REVEALED_BORDER = new Color(60, 90, 70);
+    private static final Color TILE_USED        = new Color(70, 70, 70);
+    private static final Color TILE_USED_BORDER = new Color(150, 150, 150, 120);
 
-    private static final Color TILE_USED = new Color(70, 70, 70);
-    private static final Color TILE_Q = new Color(195, 165, 40);
-    private static final Color TILE_S = new Color(120, 70, 160);
+    private static final Color TILE_Q        = new Color(195, 165, 40);
+    private static final Color TILE_Q_BORDER = new Color(255, 235, 170);
 
-    public BoardView(int cols, int rows, String title) {
+    private static final Color TILE_S        = new Color(120, 70, 160);
+    private static final Color TILE_S_BORDER = new Color(210, 170, 255);
+
+    public BoardView(int cols, int rows, String ignoredTitle) {
         this.cols = cols;
         this.rows = rows;
-        this.buttons = new JButton[rows][cols];
+        this.buttons = new TileButton[rows][cols];
 
         setOpaque(false);
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new GridLayout(rows, cols, GAP, GAP));
+        setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        JLabel lblTitle = new JLabel(title);
-        lblTitle.setForeground(new Color(235, 235, 245));
-        lblTitle.setFont(lblTitle.getFont().deriveFont(Font.BOLD, 16f));
+        buildCells();
+    }
 
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.setOpaque(false);
-        titlePanel.add(lblTitle, BorderLayout.WEST);
-        add(titlePanel, BorderLayout.NORTH);
-
-        JPanel grid = new JPanel(new GridLayout(rows, cols, 3, 3));
-        grid.setOpaque(false);
-
+    private void buildCells() {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-
-                JButton cellBtn = new JButton();
-                cellBtn.setPreferredSize(new Dimension(28, 28));
-                cellBtn.setMargin(new Insets(0, 0, 0, 0));
-                cellBtn.setFocusPainted(false);
-                cellBtn.setOpaque(true);
-                cellBtn.setContentAreaFilled(true);
-
-                styleHidden(cellBtn);
 
                 final int cc = c;
                 final int rr = r;
 
-                cellBtn.addMouseListener(new MouseAdapter() {
+                TileButton btn = new TileButton(CELL_SIZE);
+                btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                btn.setEnabled(true);
+                btn.setRolloverEnabled(true);
+
+                // IMPORTANT: remove any internal padding that can shrink icons/text
+                btn.setMargin(new Insets(0, 0, 0, 0));
+                btn.setIconTextGap(0);
+
+                styleHidden(btn);
+
+                btn.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mousePressed(MouseEvent e) {
-                        if (!cellBtn.isEnabled()) return;
+                        if (!btn.isEnabled()) return;
 
                         if (SwingUtilities.isRightMouseButton(e)) {
                             if (onCellRightClick != null) onCellRightClick.accept(cc, rr);
@@ -85,58 +94,26 @@ public class BoardView extends JPanel {
                     }
                 });
 
-                buttons[r][c] = cellBtn;
-                grid.add(cellBtn);
+                buttons[r][c] = btn;
+                add(btn);
             }
         }
-
-        add(grid, BorderLayout.CENTER);
     }
 
-    public void setOnCellClick(BiConsumer<Integer, Integer> listener) {
-        this.onCellClick = listener;
-    }
-
-    public void setOnCellRightClick(BiConsumer<Integer, Integer> listener) {
-        this.onCellRightClick = listener;
-    }
+    // ===== Controller hooks =====
+    public void setOnCellClick(BiConsumer<Integer, Integer> listener) { this.onCellClick = listener; }
+    public void setOnCellRightClick(BiConsumer<Integer, Integer> listener) { this.onCellRightClick = listener; }
 
     public void setBoardEnabled(boolean enabled) {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                buttons[r][c].setEnabled(enabled);
-                buttons[r][c].setCursor(enabled ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-                        : Cursor.getDefaultCursor());
+                TileButton b = buttons[r][c];
+                b.setEnabled(enabled);
+                b.setCursor(enabled ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+                b.setDimmed(!enabled);
             }
         }
-    }
-    private void setFullIcon(JButton btn, ImageIcon baseIcon) {
-        if (baseIcon == null) {
-            btn.setIcon(null);
-            return;
-        }
-
-        int w = Math.max(1, btn.getWidth());
-        int h = Math.max(1, btn.getHeight());
-
-        // If not laid out yet, fallback to preferred size
-        if (w <= 1 || h <= 1) {
-            Dimension pref = btn.getPreferredSize();
-            w = Math.max(1, pref.width);
-            h = Math.max(1, pref.height);
-        }
-
-        Image img = baseIcon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
-        btn.setIcon(new ImageIcon(img));
-
-        btn.setText("");
-        btn.setHorizontalTextPosition(SwingConstants.CENTER);
-        btn.setVerticalTextPosition(SwingConstants.CENTER);
-
-        btn.setIconTextGap(0);
-        btn.setMargin(new Insets(0, 0, 0, 0));
-        btn.setBorderPainted(false); // optional if you want clean tiles
-        btn.setContentAreaFilled(true);
+        repaint();
     }
 
     public void renderBoard(Board board) {
@@ -144,12 +121,16 @@ public class BoardView extends JPanel {
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
+
                 Cell cell = board.get(c, r);
-                JButton btn = buttons[r][c];
+                TileButton btn = buttons[r][c];
 
                 // reset
                 btn.setText("");
                 btn.setIcon(null);
+                btn.setTextColor(Color.WHITE);
+                btn.setTextSize(14);
+                btn.setBold(true);
 
                 if (cell == null) {
                     styleHidden(btn);
@@ -157,108 +138,120 @@ public class BoardView extends JPanel {
                 }
 
                 if (!cell.isRevealed()) {
-                    // HIDDEN
                     if (cell.isFlagged()) {
                         styleFlagged(btn);
-
-                        // ✅ FULL-CELL FLAG ICON
-                        setFullIcon(btn, baseFlag);
+                        setFullIcon(btn, flagIcon);
                     } else {
                         styleHidden(btn);
                     }
-
                 } else {
-                    // REVEALED
                     switch (cell.getType()) {
+
                         case MINE -> {
                             styleMine(btn);
-
-                            // ✅ FULL-CELL MINE ICON
-                            setFullIcon(btn, baseMine);
+                            setFullIcon(btn, mineIcon);
                         }
 
                         case NUMBER -> {
-                            int n = cell.getAdjacentMines();
                             styleRevealed(btn);
-                            btn.setText(String.valueOf(n));
-                            btn.setForeground(colorForNumber(n));
+                            int n = cell.getAdjacentMines();
+                            if (n > 0) {
+                                btn.setText(String.valueOf(n));
+                                btn.setTextColor(colorForNumber(n));
+                                btn.setTextSize(16);
+                            } else {
+                                btn.setText("");
+                            }
                         }
 
-                        case EMPTY -> {
-                            styleRevealed(btn);
+                        case EMPTY -> styleRevealed(btn);
+
+                        case QUESTION -> {
+                            if (cell.isUsedSpecial()) {
+                                styleUsed(btn);
+                                btn.setText("×");
+                                btn.setTextSize(22);
+                            } else {
+                                styleQuestion(btn);
+                                btn.setText("Q");
+                                btn.setTextColor(Color.BLACK);
+                                btn.setTextSize(16);
+                            }
                         }
 
                         case SURPRISE -> {
                             if (cell.isUsedSpecial()) {
                                 styleUsed(btn);
-                                btn.setText("USED");
+                                btn.setText("×");
+                                btn.setTextSize(22);
                             } else {
                                 styleSurprise(btn);
                                 btn.setText("S");
-                            }
-                        }
-
-                        case QUESTION -> {
-                            if (cell.isUsedSpecial()) {
-                                styleUsed(btn);
-                                btn.setText("USED");
-                            } else {
-                                styleQuestion(btn);
-                                btn.setText("Q");
+                                btn.setTextSize(16);
                             }
                         }
                     }
                 }
+
+                // Hard-lock size again (prevents any expansion bugs)
+                btn.lockSize();
             }
         }
+
+        revalidate();
+        repaint();
     }
 
-
-    private void styleHidden(JButton b) {
-        b.setBackground(TILE_HIDDEN);
-        b.setBorder(BorderFactory.createLineBorder(TILE_HIDDEN_BORDER));
-        b.setForeground(Color.WHITE);
-        b.setFont(b.getFont().deriveFont(Font.BOLD, 12f));
+    // ===== Icon helper (fixes "icon smaller than tile") =====
+    // Ensures icon is always scaled to the same logical size, not button's transient width/height.
+    private void setFullIcon(JButton btn, ImageIcon base) {
+        if (base == null || base.getIconWidth() <= 0) {
+            btn.setIcon(null);
+            return;
+        }
+        btn.setIcon(base);
+        btn.setText("");
+        btn.setHorizontalAlignment(SwingConstants.CENTER);
+        btn.setVerticalAlignment(SwingConstants.CENTER);
+        btn.setIconTextGap(0);
     }
 
-    private void styleRevealed(JButton b) {
-        b.setBackground(TILE_REVEALED);
-        b.setBorder(BorderFactory.createLineBorder(TILE_REVEALED_BORDER));
-        b.setForeground(Color.WHITE);
-        b.setFont(b.getFont().deriveFont(Font.BOLD, 12f));
+    private static ImageIcon safeIcon(String name, int w, int h) {
+        ImageIcon ic = UiAssets.icon(name, w, h);
+        if (ic == null || ic.getIconWidth() <= 0) {
+            System.out.println("⚠ Missing icon: img/" + name);
+            return null;
+        }
+        return ic;
     }
 
-    private void styleFlagged(JButton b) {
-        b.setBackground(new Color(30, 50, 35));
-        b.setBorder(BorderFactory.createLineBorder(new Color(90, 140, 110)));
-        b.setIcon(baseFlag);
+    // ===== Styles =====
+    private void styleHidden(TileButton b) {
+        b.setTileColors(TILE_HIDDEN, TILE_HIDDEN_BORDER);
     }
 
-    private void styleMine(JButton b) {
-        b.setBackground(new Color(70, 20, 20));
-        b.setBorder(BorderFactory.createLineBorder(new Color(150, 60, 60)));
-        b.setIcon(baseMine);
+    private void styleRevealed(TileButton b) {
+        b.setTileColors(TILE_REVEALED, TILE_REVEALED_BORDER);
     }
 
-    private void styleUsed(JButton b) {
-        b.setBackground(TILE_USED);
-        b.setBorder(BorderFactory.createLineBorder(new Color(120, 120, 120)));
-        b.setForeground(Color.WHITE);
-        b.setFont(b.getFont().deriveFont(Font.BOLD, 10f));
+    private void styleFlagged(TileButton b) {
+        b.setTileColors(new Color(26, 44, 32), new Color(120, 185, 150));
     }
 
-    private void styleQuestion(JButton b) {
-        b.setBackground(TILE_Q);
-        b.setBorder(BorderFactory.createLineBorder(new Color(235, 210, 120)));
-        b.setForeground(Color.BLACK);
-        b.setFont(b.getFont().deriveFont(Font.BOLD, 12f));
+    private void styleMine(TileButton b) {
+        b.setTileColors(new Color(70, 18, 18), new Color(190, 90, 90));
     }
 
-    private void styleSurprise(JButton b) {
-        b.setBackground(TILE_S);
-        b.setBorder(BorderFactory.createLineBorder(new Color(190, 140, 220)));
-        b.setForeground(Color.WHITE);
-        b.setFont(b.getFont().deriveFont(Font.BOLD, 12f));
+    private void styleUsed(TileButton b) {
+        b.setTileColors(TILE_USED, TILE_USED_BORDER);
+    }
+
+    private void styleQuestion(TileButton b) {
+        b.setTileColors(TILE_Q, TILE_Q_BORDER);
+    }
+
+    private void styleSurprise(TileButton b) {
+        b.setTileColors(TILE_S, TILE_S_BORDER);
     }
 
     private Color colorForNumber(int n) {
@@ -270,5 +263,112 @@ public class BoardView extends JPanel {
             case 5 -> new Color(255, 210, 130);
             default -> Color.WHITE;
         };
+    }
+
+    // =========================
+    // Premium tile button
+    // =========================
+    private static class TileButton extends JButton {
+        private final Dimension size;
+        private Color fill = new Color(0, 0, 0);
+        private Color stroke = new Color(255, 255, 255, 40);
+        private boolean dimmed = false;
+
+        TileButton(Dimension fixed) {
+            super("");
+            this.size = fixed;
+
+            // hard lock
+            setPreferredSize(size);
+            setMinimumSize(size);
+            setMaximumSize(size);
+
+            setOpaque(false);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setVerticalAlignment(SwingConstants.CENTER);
+
+            setFont(new Font("SansSerif", Font.BOLD, 14));
+            setForeground(Color.WHITE);
+
+            // remove UI padding
+            setMargin(new Insets(0, 0, 0, 0));
+            setIconTextGap(0);
+        }
+
+        void lockSize() {
+            setPreferredSize(size);
+            setMinimumSize(size);
+            setMaximumSize(size);
+        }
+
+        void setTileColors(Color fill, Color stroke) {
+            this.fill = fill;
+            this.stroke = stroke;
+            repaint();
+        }
+
+        void setTextColor(Color c) { setForeground(c); }
+        void setBold(boolean on) { setFont(getFont().deriveFont(on ? Font.BOLD : Font.PLAIN, getFont().getSize2D())); }
+        void setTextSize(int px) { setFont(getFont().deriveFont((float) px)); }
+
+        void setDimmed(boolean dim) {
+            this.dimmed = dim;
+            repaint();
+        }
+
+        @Override public Dimension getPreferredSize() { return size; }
+        @Override public Dimension getMinimumSize() { return size; }
+        @Override public Dimension getMaximumSize() { return size; }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+            int arc = 12;
+
+            // Shadow (outside tile, does not shrink content)
+            g2.setColor(new Color(0, 0, 0, 90));
+            g2.fillRoundRect(2, 3, w - 2, h - 2, arc, arc);
+
+            // Tile fill (FULL tile area)
+            Color f = fill;
+            boolean hover = getModel().isRollover() && isEnabled() && !dimmed;
+            if (hover) {
+                f = new Color(
+                        Math.min(255, fill.getRed() + 10),
+                        Math.min(255, fill.getGreen() + 10),
+                        Math.min(255, fill.getBlue() + 10),
+                        fill.getAlpha()
+                );
+            }
+            if (dimmed) f = new Color(fill.getRed(), fill.getGreen(), fill.getBlue(), 95);
+
+            g2.setColor(f);
+            g2.fillRoundRect(0, 0, w - 3, h - 3, arc, arc);
+
+            // Stroke (inside)
+            Color s = dimmed ? new Color(255, 255, 255, 25) : stroke;
+            g2.setColor(s);
+            g2.setStroke(new BasicStroke(2f));
+            g2.drawRoundRect(1, 1, w - 5, h - 5, arc, arc);
+
+            // subtle highlight
+            if (!dimmed) {
+                g2.setColor(new Color(255, 255, 255, 16));
+                g2.drawRoundRect(2, 2, w - 7, h - 7, arc, arc);
+            }
+
+            g2.dispose();
+
+            // Paint icon/text after our tile
+            super.paintComponent(g);
+        }
     }
 }

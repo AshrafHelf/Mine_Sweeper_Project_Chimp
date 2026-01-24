@@ -27,10 +27,21 @@ public class MainWindow extends JFrame {
 
     private final CardLayout cards = new CardLayout();
     private final JPanel root = new JPanel(cards);
+
     private final SplashPanel splash = new SplashPanel();
     private final HomePanel home = new HomePanel();
-    private final MainMenuPanel menu = new MainMenuPanel(); // this is now the SETUP screen
 
+    // NOTE: "setup" screen is now optional/unused because Play -> chimps -> difficulty -> game
+    private final MainMenuPanel menu = new MainMenuPanel();
+
+    private final ChimpSelectPanel chimpSelect = new ChimpSelectPanel();
+    private final DifficultyPanel difficulty = new DifficultyPanel();
+
+    // store chosen chimps (optional for later)
+    private String chosenChimpP1;
+    private String chosenChimpP2;
+    private String chosenNameP1;
+    private String chosenNameP2;
 
     // --- Admin passcode (simple version)
     private static final String ADMIN_PASSCODE = "1234";
@@ -48,22 +59,33 @@ public class MainWindow extends JFrame {
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 700));
-        setLocationRelativeTo(null); // center on screen
+        setSize(1200, 820);          // bigger default
+        setLocationRelativeTo(null); // center
 
         setContentPane(root);
         root.setBackground(BG_DARK);
 
+   
+        // Cards
         root.add(splash, "splash");
         root.add(home, "home");
+
+        // keep this if you still want it accessible from somewhere (not used by Play now)
         root.add(menu, "setup");
 
+        root.add(chimpSelect, "chimps");
+        root.add(difficulty, "difficulty");
+
         buildMenuBar();
+
+        // Wiring (IMPORTANT)
         wireSplashPanel();
         wireHomePanel();
-        wireMenuPanel();
+        wireMenuPanel();          // harmless even if setup not used
+        wireChimpSelectPanel();   // ✅ FIX: was missing (buttons were “not working”)
+        wireDifficultyPanel();    // ✅ FIX: was missing
 
-
-        cards.show(root, "menu");
+        cards.show(root, "splash");
     }
 
     // -------------------------
@@ -76,7 +98,7 @@ public class MainWindow extends JFrame {
         bar.setBackground(BAR_BG);
         bar.setOpaque(true);
 
-        // If Nimbus tries to paint gradients, we force a flat paint
+        // Force a flat paint for the bar background
         bar.setUI(new BasicMenuBarUI() {
             @Override public void paint(Graphics g, JComponent c) {
                 g.setColor(BAR_BG);
@@ -137,7 +159,6 @@ public class MainWindow extends JFrame {
         item.setOpaque(true);
         item.setFont(item.getFont().deriveFont(13f));
 
-        // Better hover/selection look
         item.setUI(new BasicMenuItemUI() {
             @Override
             protected void paintBackground(Graphics g, JMenuItem c, Color bgColor) {
@@ -225,23 +246,62 @@ public class MainWindow extends JFrame {
     }
 
     // -------------------------
-    // Wiring menu panel to callbacks
+    // Wiring panels
     // -------------------------
 
+    private void wireSplashPanel() {
+        splash.setOnContinue(() -> cards.show(root, "home"));
+    }
+
+    private void wireHomePanel() {
+        // ✅ Play goes to new flow
+        home.setOnPlay(() -> {
+            chimpSelect.resetFlow();
+            cards.show(root, "chimps");
+        });
+
+        home.setOnHistory(() -> {
+            if (openHistoryListener != null) openHistoryListener.run();
+        });
+
+        home.setOnQuestions(() -> {
+            if (openQuestionsListener != null) openQuestionsListener.run();
+        });
+
+        home.setOnExit(this::dispose);
+    }
+
+    // (Optional old setup screen wiring — safe to keep)
     private void wireMenuPanel() {
         menu.setOnStart((diff, p1, p2) -> {
             if (newGameListener != null) newGameListener.start(diff, p1, p2);
         });
 
-        menu.setOnHistory(() -> {
-            if (openHistoryListener != null) openHistoryListener.run();
-        });
+        menu.setOnBack(() -> cards.show(root, "home"));
+    }
 
-        menu.setOnQuestions(() -> {
-            if (openQuestionsListener != null) openQuestionsListener.run();
-        });
+    // ✅ This was missing before (caused BACK/SELECT to “not work”)
+    private void wireChimpSelectPanel() {
+        chimpSelect.setOnBack(() -> cards.show(root, "home"));
 
-        menu.setOnExit(this::dispose);
+        chimpSelect.setOnDone((p1, p2, n1, n2) -> {
+            chosenChimpP1 = p1;
+            chosenChimpP2 = p2;
+            chosenNameP1 = n1;
+            chosenNameP2 = n2;
+            cards.show(root, "difficulty");
+        });
+    }
+
+
+    private void wireDifficultyPanel() {
+        difficulty.setOnBack(() -> cards.show(root, "chimps"));
+
+        difficulty.setOnDone(diff -> {
+            if (newGameListener != null) {
+                newGameListener.start(diff, chosenNameP1, chosenNameP2);
+            }
+        });
     }
 
     // -------------------------
@@ -261,28 +321,51 @@ public class MainWindow extends JFrame {
     }
 
     public GamePanel showGame(Game game) {
-        GamePanel gamePanel = new GamePanel(game);
+        ImageIcon p1 = loadChimpAvatar(chosenChimpP1, 34, 34);
+        ImageIcon p2 = loadChimpAvatar(chosenChimpP2, 34, 34);
+
+        GamePanel gamePanel = new GamePanel(game, p1, p2);
         root.add(gamePanel, "game");
         cards.show(root, "game");
+        revalidate();
+        repaint();
         return gamePanel;
     }
-    private void wireSplashPanel() {
-        splash.setOnContinue(() -> cards.show(root, "home"));
+    
+    private ImageIcon loadChimpAvatar(String chimpId, int w, int h) {
+        if (chimpId == null) return null;
+
+        String file = switch (chimpId) {
+            case "knight"  -> "chimps/chimp1.png";
+            case "gamer"   -> "chimps/chimp2.png";
+            case "ninja"   -> "chimps/chimp3.png";
+            case "fairy"   -> "chimps/chimp4.png";
+            case "hacker"  -> "chimps/chimp5.png";
+            case "monday"  -> "chimps/chimp6.png";
+            case "trainer" -> "chimps/chimp7.png";
+            case "astro"   -> "chimps/chimp8.png";
+            default -> null;
+        };
+
+        if (file == null) return null;
+
+        URL url = getClass().getClassLoader().getResource("img/" + file);
+        if (url == null) return null;
+
+        Image img = new ImageIcon(url).getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        return new ImageIcon(img);
     }
 
-    private void wireHomePanel() {
-        home.setOnPlay(() -> cards.show(root, "setup"));
 
-        home.setOnHistory(() -> {
-            if (openHistoryListener != null) openHistoryListener.run();
-        });
 
-        home.setOnQuestions(() -> {
-            if (openQuestionsListener != null) openQuestionsListener.run();
-        });
-
-        home.setOnExit(this::dispose);
+    // If you still call this from a controller, it returns to Home (clean)
+    public void showMenu() {
+        cards.show(root, "home");
     }
+
+    // -------------------------
+    // Admin dialogs
+    // -------------------------
 
     public void showQuestionAdmin(QuestionService qService) {
         if (!requireAdminPasscode()) return;
@@ -293,10 +376,6 @@ public class MainWindow extends JFrame {
     public void showHistory(List<GameRecord> records) {
         HistoryDialog dialog = new HistoryDialog(this, records);
         dialog.setVisible(true);
-    }
-
-    public void showMenu() {
-        cards.show(root, "home");
     }
 
     // -------------------------
@@ -339,6 +418,7 @@ public class MainWindow extends JFrame {
     // Resource helpers
     // -------------------------
 
+    @SuppressWarnings("unused")
     private void setAppIcon(String fileName) {
         URL url = MainWindow.class.getClassLoader().getResource("img/" + fileName);
         if (url != null) {
