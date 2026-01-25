@@ -13,16 +13,12 @@ public class BoardView extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    // ===== Premium sizing =====
-    // If you change TILE, EVERYTHING stays consistent (icons, fonts, layout)
+ 
     private static final int TILE = 42;
-    private static final int GAP  = 1; // 0 looks too "stuck". 1 looks premium + still tight.
+    private static final int GAP  = 1; 
     private static final Dimension CELL_SIZE = new Dimension(TILE, TILE);
-
-    // Icon should fill the tile without clipping the rounded border
-    private static final int ICON_PAD = 2;                 // breathing room inside tile
-    private static final int ICON_SIZE = TILE - ICON_PAD;  // was TILE-6, but our paint now uses full tile -> perfect
-
+    private static final int ICON_PAD = 2;          
+    private static final int ICON_SIZE = TILE - ICON_PAD;  
     private final int cols;
     private final int rows;
     private final TileButton[][] buttons;
@@ -30,10 +26,9 @@ public class BoardView extends JPanel {
     private BiConsumer<Integer, Integer> onCellClick;
     private BiConsumer<Integer, Integer> onCellRightClick;
 
-    // Icons cached via UiAssets (theme icons)
+
     private final ImageIcon flagIcon = safeIcon("bananaflag.png", ICON_SIZE, ICON_SIZE);
     private final ImageIcon mineIcon = safeIcon("mine1.png", ICON_SIZE, ICON_SIZE);
-    // Optional: you can add more icons later (Q/S/used), but text is fine.
 
     // ===== Jungle palette =====
     private static final Color TILE_HIDDEN        = new Color(18, 30, 22);
@@ -75,7 +70,6 @@ public class BoardView extends JPanel {
                 btn.setEnabled(true);
                 btn.setRolloverEnabled(true);
 
-                // IMPORTANT: remove any internal padding that can shrink icons/text
                 btn.setMargin(new Insets(0, 0, 0, 0));
                 btn.setIconTextGap(0);
 
@@ -193,7 +187,6 @@ public class BoardView extends JPanel {
                     }
                 }
 
-                // Hard-lock size again (prevents any expansion bugs)
                 btn.lockSize();
             }
         }
@@ -202,8 +195,6 @@ public class BoardView extends JPanel {
         repaint();
     }
 
-    // ===== Icon helper (fixes "icon smaller than tile") =====
-    // Ensures icon is always scaled to the same logical size, not button's transient width/height.
     private void setFullIcon(JButton btn, ImageIcon base) {
         if (base == null || base.getIconWidth() <= 0) {
             btn.setIcon(null);

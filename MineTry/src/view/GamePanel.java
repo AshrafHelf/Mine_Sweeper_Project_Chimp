@@ -7,7 +7,6 @@ import enums.GameState;
 import model.Board;
 import model.Game;
 import model.Player;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.net.URL;
@@ -25,13 +24,18 @@ public class GamePanel extends JPanel {
     private final Game game;
     private final ImageIcon p1Avatar;
     private final ImageIcon p2Avatar;
+    
+    private Runnable settingsListener;
+    private Runnable helpListener;
+
+    public void onOpenSettings(Runnable r) { this.settingsListener = r; }
+    public void onOpenHelp(Runnable r) { this.helpListener = r; }
 
     private Runnable backListener;
     private Runnable restartListener;
     private BiConsumer<Integer, Integer> revealListener;
     private BiConsumer<Integer, Integer> flagListener;
 
-    // Background GIF (same vibe as splash)
     private final ImageIcon bgGif = loadGif("/img/splash_leaves5.gif");
 
     // --- Theme ---
@@ -78,6 +82,13 @@ public class GamePanel extends JPanel {
     public GamePanel(Game game) {
         this(game, null, null);
     }
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        // no separate in-game music yet, so stop menu loop
+        AudioManager.stopMusic();
+    }
+
 
     // --- Listener hooks for controller ---
     public void onBackToMenu(Runnable r) { this.backListener = r; }
@@ -136,6 +147,21 @@ public class GamePanel extends JPanel {
 
         bar.add(left, BorderLayout.WEST);
         bar.add(lblDifficulty, BorderLayout.CENTER);
+        
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        right.setOpaque(false);
+
+     // Help button removed – help is accessible via top menu
+
+        JButton btnSettings = new GlassButton("⚙ Settings");
+
+        btnSettings.addActionListener(e -> {
+            AudioManager.playSfx("button.wav");
+            if (settingsListener != null) settingsListener.run();
+        });
+        right.add(btnSettings);
+
+        bar.add(right, BorderLayout.EAST);
 
         return wrapWithMargin(bar, 10, 16, 0, 16);
     }

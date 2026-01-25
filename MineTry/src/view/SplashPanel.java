@@ -7,6 +7,8 @@ import java.net.URL;
 import java.awt.image.BufferedImage;
 
 public class SplashPanel extends JPanel {
+	private static final String MENU_MUSIC = "menu_music.wav";
+
 
     private static final long serialVersionUID = 1L;
 
@@ -33,10 +35,10 @@ public class SplashPanel extends JPanel {
         // --- card ---
         JPanel card = glassCard();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setMaximumSize(new Dimension(860, 260)); // tweak width/height as you like
+        card.setMaximumSize(new Dimension(860, 260)); 
 
 
-        // --- TITLE ROW: title + splash overlay like Minecraft ---
+      
         JComponent titleBlock = buildTitleWithSplash();
         titleBlock.setAlignmentX(Component.CENTER_ALIGNMENT);
         
@@ -46,12 +48,12 @@ public class SplashPanel extends JPanel {
         subtitle.setForeground(new Color(240, 240, 240, 210));
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 16));
 
-        // Nice primary button (more user-friendly than “click anywhere” only)
+
         JButton enterBtn = new SmoothButton("Enter Jungle");
         enterBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         enterBtn.addActionListener(e -> fireContinue());
 
-        // Hint: blinking (still there)
+
         BlinkLabel hint = new BlinkLabel("Click anywhere / press ENTER to continue");
         hint.setAlignmentX(Component.CENTER_ALIGNMENT);
         hint.setForeground(new Color(255, 230, 140, 230));
@@ -107,7 +109,12 @@ public class SplashPanel extends JPanel {
     @Override
     public void addNotify() {
         super.addNotify();
-        requestFocusInWindow();
+
+        // Start menu music as soon as SplashPanel appears
+        SwingUtilities.invokeLater(() -> {
+            AudioManager.ensureMusic(MENU_MUSIC, true);
+            requestFocusInWindow();
+        });
     }
 
     private void installKeyBindings() {
@@ -133,7 +140,7 @@ public class SplashPanel extends JPanel {
 
         int w = getWidth(), h = getHeight();
 
-        // --- Cinematic gradient overlay (darkens edges + improves readability) ---
+
         // top fade
         g2.setComposite(AlphaComposite.SrcOver.derive(0.18f));
         g2.setPaint(new GradientPaint(0, 0, new Color(0,0,0,200), 0, h/2f, new Color(0,0,0,0)));
@@ -152,7 +159,7 @@ public class SplashPanel extends JPanel {
         g2.fillRect(0, 0, 12, h);
         g2.fillRect(w-12, 0, 12, h);
 
-        // --- Fade from black (keep your fade) ---
+
         if (fadeAlpha > 0f) {
             g2.setComposite(AlphaComposite.SrcOver.derive(fadeAlpha));
             g2.setColor(Color.BLACK);
@@ -200,12 +207,12 @@ public class SplashPanel extends JPanel {
         overlay.add(splashWrap);
         overlay.add(titleWrap);
 
-        // ✅ Size the overlay bigger than the title so splash never clips
+
         Dimension t = title.getPreferredSize();
         Dimension s = splash.getPreferredSize();
 
-        int extraRight = s.width + 40; // more safety
-        int extraTop   = 28;           // more top room for rotation
+        int extraRight = s.width + 40; 
+        int extraTop   = 28;         
 
         Dimension big = new Dimension(t.width + extraRight, t.height + extraTop);
 
@@ -213,7 +220,7 @@ public class SplashPanel extends JPanel {
         overlay.setMinimumSize(big);
         overlay.setMaximumSize(new Dimension(2000, big.height));
 
-        // ✅ VERY IMPORTANT: wrappers must also report the same size to OverlayLayout
+
         titleWrap.setPreferredSize(big);
         titleWrap.setMinimumSize(big);
         titleWrap.setMaximumSize(new Dimension(2000, big.height));
@@ -222,21 +229,21 @@ public class SplashPanel extends JPanel {
         splashWrap.setMinimumSize(big);
         splashWrap.setMaximumSize(new Dimension(2000, big.height));
 
-        // ✅ Clamp splash bounds so it can never go outside the overlay
+
         splashWrap.addComponentListener(new ComponentAdapter() {
             @Override public void componentResized(ComponentEvent e) {
                 int w = splashWrap.getWidth();
                 int h = splashWrap.getHeight();
                 Dimension sd = splash.getPreferredSize();
 
-                // placement (over right end of title)
+     
                 int desiredX = (int) (w * 0.68);
                 int desiredY = (int) (h * 0.36);
 
                 int x = Math.max(0, Math.min(desiredX, w - sd.width - 6));
                 int y = Math.max(0, Math.min(desiredY, h - sd.height - 6));
 
-                // ✅ DO NOT add +5 (that can cause clipping)
+
                 splash.setBounds(x, y, sd.width, sd.height);
             }
         });
@@ -276,7 +283,7 @@ public class SplashPanel extends JPanel {
         }
     }
 
-    // --- Glass card (cleaner + soft shadow) ---
+
     private JPanel glassCard() {
         JPanel p = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
@@ -422,7 +429,7 @@ public class SplashPanel extends JPanel {
         }
     }
 
-    // --- Smooth button (Minecraft-ish but modern) ---
+    // --- Smooth button
     private static class SmoothButton extends JButton {
         SmoothButton(String text) {
             super(text);

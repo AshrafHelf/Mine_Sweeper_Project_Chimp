@@ -1,15 +1,15 @@
 package view;
 
-import javax.swing.*;
-import javax.swing.plaf.basic.BasicMenuBarUI;
-import javax.swing.plaf.basic.BasicMenuItemUI;
-
 import enums.Difficulty;
 import model.Game;
 import model.GameRecord;
 import model.QuestionService;
 
+import javax.swing.*;
+import javax.swing.plaf.basic.BasicMenuBarUI;
+import javax.swing.plaf.basic.BasicMenuItemUI;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.net.URL;
 import java.util.List;
 
@@ -22,8 +22,13 @@ public class MainWindow extends JFrame {
     }
 
     private NewGameListener newGameListener;
+
     private Runnable openQuestionsListener;
     private Runnable openHistoryListener;
+
+    // Global hooks (Menu bar + per-screen Help/Settings buttons)
+    private Runnable openSettingsListener;
+    private Runnable openHelpListener;
 
     private final CardLayout cards = new CardLayout();
     private final JPanel root = new JPanel(cards);
@@ -31,19 +36,19 @@ public class MainWindow extends JFrame {
     private final SplashPanel splash = new SplashPanel();
     private final HomePanel home = new HomePanel();
 
-    // NOTE: "setup" screen is now optional/unused because Play -> chimps -> difficulty -> game
-    private final MainMenuPanel menu = new MainMenuPanel();
-
     private final ChimpSelectPanel chimpSelect = new ChimpSelectPanel();
     private final DifficultyPanel difficulty = new DifficultyPanel();
 
-    // store chosen chimps (optional for later)
+    // store chosen chimps/names for Play flow
     private String chosenChimpP1;
     private String chosenChimpP2;
     private String chosenNameP1;
     private String chosenNameP2;
 
-    // --- Admin passcode (simple version)
+    // avoid piling multiple game panels
+    private GamePanel currentGamePanel;
+
+    // --- Admin passcode
     private static final String ADMIN_PASSCODE = "1234";
     private boolean adminUnlocked = false;
 
@@ -52,38 +57,56 @@ public class MainWindow extends JFrame {
     private static final Color BAR_BG  = new Color(14, 18, 28);
     private static final Color TEXT    = new Color(235, 235, 245);
     private static final Color MUTED   = new Color(160, 170, 190);
-    private static final Color ACCENT  = new Color(76, 175, 80); // jungle green
+    private static final Color ACCENT  = new Color(76, 175, 80);
 
     public MainWindow() {
         super("Minesweeper – Jungle Co-op");
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 700));
-        setSize(1200, 820);          // bigger default
-        setLocationRelativeTo(null); // center
+        setSize(1200, 820);
+        setLocationRelativeTo(null);
 
         setContentPane(root);
         root.setBackground(BG_DARK);
 
-   
-        // Cards
         root.add(splash, "splash");
         root.add(home, "home");
-
-        // keep this if you still want it accessible from somewhere (not used by Play now)
-        root.add(menu, "setup");
-
         root.add(chimpSelect, "chimps");
         root.add(difficulty, "difficulty");
 
+        // Global Help/Settings (used by menu bar and can be reused by panels)
+        this.openHelpListener = () -> {
+            AudioManager.playSfx("message.wav");
+            try {
+                HelpDialog.open(this, 0);
+            } catch (Throwable ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Help failed to open:\n" + ex.getMessage());
+            }
+        };
+
+        this.openSettingsListener = () -> {
+            AudioManager.playSfx("button.wav");
+            try {
+                SettingsDialog dlg = new SettingsDialog(this);
+                dlg.setAlwaysOnTop(true);
+                dlg.setVisible(true);
+                dlg.toFront();
+                dlg.requestFocus();
+                dlg.setAlwaysOnTop(false);
+            } catch (Throwable ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Settings failed to open:\n" + ex.getMessage());
+            }
+        };
+
         buildMenuBar();
 
-        // Wiring (IMPORTANT)
         wireSplashPanel();
         wireHomePanel();
-        wireMenuPanel();          // harmless even if setup not used
-        wireChimpSelectPanel();   // ✅ FIX: was missing (buttons were “not working”)
-        wireDifficultyPanel();    // ✅ FIX: was missing
+        wireChimpSelectPanel();
+        wireDifficultyPanel();
 
         cards.show(root, "splash");
     }
@@ -91,14 +114,12 @@ public class MainWindow extends JFrame {
     // -------------------------
     // Menu bar
     // -------------------------
-
     private void buildMenuBar() {
         JMenuBar bar = new JMenuBar();
         bar.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         bar.setBackground(BAR_BG);
         bar.setOpaque(true);
 
-        // Force a flat paint for the bar background
         bar.setUI(new BasicMenuBarUI() {
             @Override public void paint(Graphics g, JComponent c) {
                 g.setColor(BAR_BG);
@@ -107,43 +128,77 @@ public class MainWindow extends JFrame {
         });
 
         JMenu game = new JMenu("Game");
+        JMenu tools = new JMenu("Tools");
         JMenu help = new JMenu("Help");
 
         styleMenu(game);
+        styleMenu(tools);
         styleMenu(help);
 
-        JMenuItem scores = new JMenuItem("History");
-        JMenuItem qadmin = new JMenuItem("Questions");
-        JMenuItem exit   = new JMenuItem("Exit");
+        JMenuItem history = new JMenuItem("History");
+        JMenuItem qadmin  = new JMenuItem("Questions");
+        JMenuItem exit    = new JMenuItem("Exit");
 
-        styleMenuItem(scores);
+        JMenuItem settings = new JMenuItem("Settings");
+
+        JMenuItem howToPlay = new JMenuItem("How to Play");
+        JMenuItem about = new JMenuItem("About");
+
+        styleMenuItem(history);
         styleMenuItem(qadmin);
         styleMenuItem(exit);
+        styleMenuItem(settings);
+        styleMenuItem(howToPlay);
+        styleMenuItem(about);
 
-        scores.addActionListener(e -> {
+        history.addActionListener(e -> {
+            AudioManager.playSfx("button.wav");
             if (openHistoryListener != null) openHistoryListener.run();
         });
 
         qadmin.addActionListener(e -> {
+            AudioManager.playSfx("button.wav");
             if (openQuestionsListener != null) openQuestionsListener.run();
         });
 
-        exit.addActionListener(e -> dispose());
+        settings.addActionListener(e -> {
+            if (openSettingsListener != null) openSettingsListener.run();
+        });
 
-        game.add(scores);
+        exit.addActionListener(e -> {
+            AudioManager.playSfx("button.wav");
+            dispose();
+        });
+
+        howToPlay.addActionListener(e -> {
+            if (openHelpListener != null) openHelpListener.run();
+        });
+
+        about.addActionListener(e -> {
+            AudioManager.playSfx("message.wav");
+            showAboutDialog();
+        });
+
+        game.add(history);
         game.add(qadmin);
         game.addSeparator();
         game.add(exit);
 
-        JMenuItem about = new JMenuItem("About");
-        styleMenuItem(about);
-        about.addActionListener(e -> showAboutDialog());
+        tools.add(settings);
+
+        help.add(howToPlay);
+        help.addSeparator();
         help.add(about);
 
         bar.add(game);
+        bar.add(tools);
         bar.add(help);
 
         setJMenuBar(bar);
+
+        game.setMnemonic(KeyEvent.VK_G);
+        tools.setMnemonic(KeyEvent.VK_T);
+        help.setMnemonic(KeyEvent.VK_H);
     }
 
     private void styleMenu(JMenu menu) {
@@ -163,11 +218,7 @@ public class MainWindow extends JFrame {
             @Override
             protected void paintBackground(Graphics g, JMenuItem c, Color bgColor) {
                 ButtonModel model = c.getModel();
-                if (model.isArmed() || model.isSelected()) {
-                    g.setColor(new Color(24, 30, 44));
-                } else {
-                    g.setColor(BAR_BG);
-                }
+                g.setColor((model.isArmed() || model.isSelected()) ? new Color(24, 30, 44) : BAR_BG);
                 g.fillRect(0, 0, c.getWidth(), c.getHeight());
             }
 
@@ -185,7 +236,6 @@ public class MainWindow extends JFrame {
     // -------------------------
     // About dialog
     // -------------------------
-
     private void showAboutDialog() {
         JDialog dlg = new JDialog(this, "About Minesweeper", true);
         dlg.setLayout(new BorderLayout());
@@ -203,20 +253,15 @@ public class MainWindow extends JFrame {
         JLabel subtitle = new JLabel("Two boards • shared lives • Q & S special cells");
         subtitle.setForeground(MUTED);
 
-        JLabel authors = new JLabel("Developed by: Chimp");
+        JLabel authors = new JLabel("Developed by: Chimp Sweeper Team");
         authors.setForeground(MUTED);
 
         JLabel info = new JLabel("<html>" +
                 "• Question cells (Q): activation cost + outcomes<br/>" +
                 "• Surprise cells (S): activation cost + random good/bad<br/>" +
-                "• Admin: question bank + game history" +
+                "• Admin tools: question bank + game history" +
                 "</html>");
         info.setForeground(new Color(200, 205, 230));
-
-        title.setAlignmentX(Component.LEFT_ALIGNMENT);
-        subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        authors.setAlignmentX(Component.LEFT_ALIGNMENT);
-        info.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         content.add(title);
         content.add(Box.createVerticalStrut(6));
@@ -230,7 +275,10 @@ public class MainWindow extends JFrame {
 
         JButton ok = new JButton("OK");
         ok.setFocusPainted(false);
-        ok.addActionListener(e -> dlg.dispose());
+        ok.addActionListener(e -> {
+            AudioManager.playSfx("button.wav");
+            dlg.dispose();
+        });
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         bottom.setBackground(BG_DARK);
@@ -241,50 +289,63 @@ public class MainWindow extends JFrame {
 
         dlg.pack();
         dlg.setLocationRelativeTo(this);
-        dlg.setMinimumSize(new Dimension(420, 250));
+        dlg.setMinimumSize(new Dimension(440, 260));
         dlg.setVisible(true);
     }
 
     // -------------------------
     // Wiring panels
     // -------------------------
-
     private void wireSplashPanel() {
         splash.setOnContinue(() -> cards.show(root, "home"));
     }
 
     private void wireHomePanel() {
-        // ✅ Play goes to new flow
+
         home.setOnPlay(() -> {
+            AudioManager.playSfx("button.wav");
             chimpSelect.resetFlow();
             cards.show(root, "chimps");
         });
 
         home.setOnHistory(() -> {
+            AudioManager.playSfx("button.wav");
             if (openHistoryListener != null) openHistoryListener.run();
         });
 
         home.setOnQuestions(() -> {
+            AudioManager.playSfx("button.wav");
             if (openQuestionsListener != null) openQuestionsListener.run();
         });
 
-        home.setOnExit(this::dispose);
-    }
-
-    // (Optional old setup screen wiring — safe to keep)
-    private void wireMenuPanel() {
-        menu.setOnStart((diff, p1, p2) -> {
-            if (newGameListener != null) newGameListener.start(diff, p1, p2);
+        // ✅ FIX: wire settings/help so Home buttons actually open dialogs
+        home.setOnSettings(() -> {
+            if (openSettingsListener != null) openSettingsListener.run();
         });
 
-        menu.setOnBack(() -> cards.show(root, "home"));
+        home.setOnHelp(() -> {
+            if (openHelpListener != null) openHelpListener.run();
+        });
+
+        home.setOnExit(() -> {
+            AudioManager.playSfx("button.wav");
+            dispose();
+        });
     }
 
-    // ✅ This was missing before (caused BACK/SELECT to “not work”)
+
     private void wireChimpSelectPanel() {
-        chimpSelect.setOnBack(() -> cards.show(root, "home"));
+        chimpSelect.setOnBack(() -> {
+            AudioManager.playSfx("button.wav");
+            cards.show(root, "home");
+        });
+
+        // If ChimpSelectPanel has Settings/Help buttons, uncomment:
+        // chimpSelect.setOnSettings(() -> { if (openSettingsListener != null) openSettingsListener.run(); });
+        // chimpSelect.setOnHelp(() -> { if (openHelpListener != null) openHelpListener.run(); });
 
         chimpSelect.setOnDone((p1, p2, n1, n2) -> {
+            AudioManager.playSfx("button.wav");
             chosenChimpP1 = p1;
             chosenChimpP2 = p2;
             chosenNameP1 = n1;
@@ -293,11 +354,17 @@ public class MainWindow extends JFrame {
         });
     }
 
-
     private void wireDifficultyPanel() {
-        difficulty.setOnBack(() -> cards.show(root, "chimps"));
+        difficulty.setOnBack(() -> {
+            AudioManager.playSfx("button.wav");
+            cards.show(root, "chimps");
+        });
+
+        // If DifficultyPanel has Settings/Help buttons, uncomment:
+        // difficulty.setOnHelp(() -> { if (openHelpListener != null) openHelpListener.run(); });
 
         difficulty.setOnDone(diff -> {
+            AudioManager.playSfx("button.wav");
             if (newGameListener != null) {
                 newGameListener.start(diff, chosenNameP1, chosenNameP2);
             }
@@ -307,31 +374,76 @@ public class MainWindow extends JFrame {
     // -------------------------
     // Public callbacks used by controllers
     // -------------------------
+    public void onNewGame(NewGameListener l) { this.newGameListener = l; }
+    public void onOpenQuestions(Runnable l) { this.openQuestionsListener = l; }
+    public void onOpenHistory(Runnable l) { this.openHistoryListener = l; }
 
-    public void onNewGame(NewGameListener l) {
-        this.newGameListener = l;
-    }
-
-    public void onOpenQuestions(Runnable l) {
-        this.openQuestionsListener = l;
-    }
-
-    public void onOpenHistory(Runnable l) {
-        this.openHistoryListener = l;
-    }
+    public void onOpenSettings(Runnable l) { this.openSettingsListener = l; }
+    public void onOpenHelp(Runnable l) { this.openHelpListener = l; }
 
     public GamePanel showGame(Game game) {
+        if (currentGamePanel != null) {
+            root.remove(currentGamePanel);
+            currentGamePanel = null;
+        }
+
         ImageIcon p1 = loadChimpAvatar(chosenChimpP1, 34, 34);
         ImageIcon p2 = loadChimpAvatar(chosenChimpP2, 34, 34);
 
-        GamePanel gamePanel = new GamePanel(game, p1, p2);
-        root.add(gamePanel, "game");
+        currentGamePanel = new GamePanel(game, p1, p2);
+
+        root.add(currentGamePanel, "game");
         cards.show(root, "game");
         revalidate();
         repaint();
-        return gamePanel;
+
+        return currentGamePanel;
     }
-    
+
+    public void showMenu() {
+        cards.show(root, "home");
+    }
+
+    // -------------------------
+    // Admin dialogs
+    // -------------------------
+    public void showQuestionAdmin(QuestionService qService) {
+        if (!requireAdminPasscode()) return;
+        new QuestionAdminDialog(this, qService).setVisible(true);
+    }
+
+    public void showHistory(List<GameRecord> records) {
+        new HistoryDialog(this, records).setVisible(true);
+    }
+
+    private boolean requireAdminPasscode() {
+        if (adminUnlocked) return true;
+
+        JPasswordField pf = new JPasswordField();
+        pf.setEchoChar('•');
+
+        int ok = JOptionPane.showConfirmDialog(
+                this,
+                pf,
+                "Enter Admin Passcode",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (ok != JOptionPane.OK_OPTION) return false;
+
+        String entered = new String(pf.getPassword()).trim();
+        if (!ADMIN_PASSCODE.equals(entered)) {
+            AudioManager.playSfx("error.wav");
+            JOptionPane.showMessageDialog(this, "Wrong passcode.", "Access denied", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        AudioManager.playSfx("correct.wav");
+        adminUnlocked = true;
+        return true;
+    }
+
     private ImageIcon loadChimpAvatar(String chimpId, int w, int h) {
         if (chimpId == null) return null;
 
@@ -354,77 +466,5 @@ public class MainWindow extends JFrame {
 
         Image img = new ImageIcon(url).getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
         return new ImageIcon(img);
-    }
-
-
-
-    // If you still call this from a controller, it returns to Home (clean)
-    public void showMenu() {
-        cards.show(root, "home");
-    }
-
-    // -------------------------
-    // Admin dialogs
-    // -------------------------
-
-    public void showQuestionAdmin(QuestionService qService) {
-        if (!requireAdminPasscode()) return;
-        QuestionAdminDialog dialog = new QuestionAdminDialog(this, qService);
-        dialog.setVisible(true);
-    }
-
-    public void showHistory(List<GameRecord> records) {
-        HistoryDialog dialog = new HistoryDialog(this, records);
-        dialog.setVisible(true);
-    }
-
-    // -------------------------
-    // Admin passcode
-    // -------------------------
-
-    private boolean requireAdminPasscode() {
-        if (adminUnlocked) return true;
-
-        JPasswordField pf = new JPasswordField();
-        pf.setEchoChar('•');
-
-        int ok = JOptionPane.showConfirmDialog(
-                this,
-                pf,
-                "Enter Admin Passcode",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE
-        );
-
-        if (ok != JOptionPane.OK_OPTION) return false;
-
-        String entered = new String(pf.getPassword()).trim();
-
-        if (!ADMIN_PASSCODE.equals(entered)) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Wrong passcode.",
-                    "Access denied",
-                    JOptionPane.ERROR_MESSAGE
-            );
-            return false;
-        }
-
-        adminUnlocked = true;
-        return true;
-    }
-
-    // -------------------------
-    // Resource helpers
-    // -------------------------
-
-    @SuppressWarnings("unused")
-    private void setAppIcon(String fileName) {
-        URL url = MainWindow.class.getClassLoader().getResource("img/" + fileName);
-        if (url != null) {
-            setIconImage(new ImageIcon(url).getImage());
-        } else {
-            System.out.println("⚠ App icon not found: img/" + fileName);
-        }
     }
 }

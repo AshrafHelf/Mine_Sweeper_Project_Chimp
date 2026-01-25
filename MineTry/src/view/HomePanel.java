@@ -1,22 +1,27 @@
 package view;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.net.URL;
 import java.awt.image.BufferedImage;
 
-/**
- * Home (Main Menu) - matches SplashPanel glass style.
- * Buttons: Play / History / Questions / Exit.
- */
 public class HomePanel extends JPanel {
+	
+	private static final String MENU_MUSIC = "menu_music.wav";
+
 
     private static final long serialVersionUID = 1L;
+
+    // 🔥 turn this OFF to remove Settings/Help buttons from the center card
+    private static final boolean SHOW_INLINE_SETTINGS_HELP = false;
 
     private Runnable onPlay;
     private Runnable onHistory;
     private Runnable onQuestions;
+    private Runnable onSettings;
+    private Runnable onHelp;
     private Runnable onExit;
 
     private final Image gifImage;
@@ -26,7 +31,6 @@ public class HomePanel extends JPanel {
         setFocusable(true);
         setOpaque(true);
 
-        // ✅ Same background family as Splash
         ImageIcon gifIcon = loadGif("/img/splash_leaves5.gif");
         this.gifImage = gifIcon.getImage();
 
@@ -34,11 +38,9 @@ public class HomePanel extends JPanel {
         bg.setLayout(new GridBagLayout());
         add(bg, BorderLayout.CENTER);
 
-        // ✅ SAME glass card as Splash
         JPanel card = glassCard();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
-        // Title (smaller than splash but same vibe)
         OutlineLabel title = new OutlineLabel(
                 "CHIMP SWEEPER",
                 new Font("SansSerif", Font.BOLD, 62),
@@ -53,18 +55,17 @@ public class HomePanel extends JPanel {
         subtitle.setForeground(new Color(240, 240, 240, 210));
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 16));
 
-        // ✅ SAME button style as Splash
         JButton play = new SmoothButton("▶  Play");
         JButton history = new SmoothButton("📜  History");
         JButton questions = new SmoothButton("❓  Questions");
+        JButton settings = new SmoothButton("⚙  Settings");
+        JButton help = new SmoothButton("❔  Help");
         JButton exit = new SmoothButton("⛔  Exit");
 
-        play.setAlignmentX(Component.CENTER_ALIGNMENT);
-        history.setAlignmentX(Component.CENTER_ALIGNMENT);
-        questions.setAlignmentX(Component.CENTER_ALIGNMENT);
-        exit.setAlignmentX(Component.CENTER_ALIGNMENT);
+        for (JButton b : new JButton[]{play, history, questions, settings, help, exit}) {
+            b.setAlignmentX(Component.CENTER_ALIGNMENT);
+        }
 
-        // spacing
         card.add(title);
         card.add(Box.createVerticalStrut(8));
         card.add(subtitle);
@@ -74,6 +75,14 @@ public class HomePanel extends JPanel {
         card.add(history);
         card.add(Box.createVerticalStrut(10));
         card.add(questions);
+
+        if (SHOW_INLINE_SETTINGS_HELP) {
+            card.add(Box.createVerticalStrut(10));
+            card.add(settings);
+            card.add(Box.createVerticalStrut(10));
+            card.add(help);
+        }
+
         card.add(Box.createVerticalStrut(10));
         card.add(exit);
 
@@ -85,25 +94,34 @@ public class HomePanel extends JPanel {
         bg.add(card, gbc);
 
         // actions
-        play.addActionListener(e -> { if (onPlay != null) onPlay.run(); });
-        history.addActionListener(e -> { if (onHistory != null) onHistory.run(); });
-        questions.addActionListener(e -> { if (onQuestions != null) onQuestions.run(); });
-        exit.addActionListener(e -> { if (onExit != null) onExit.run(); });
+        play.addActionListener(e -> { AudioManager.playSfx("button.wav"); if (onPlay != null) onPlay.run(); });
+        history.addActionListener(e -> { AudioManager.playSfx("button.wav"); if (onHistory != null) onHistory.run(); });
+        questions.addActionListener(e -> { AudioManager.playSfx("button.wav"); if (onQuestions != null) onQuestions.run(); });
 
-        // keyboard
+        settings.addActionListener(e -> { AudioManager.playSfx("button.wav"); if (onSettings != null) onSettings.run(); });
+        help.addActionListener(e -> { AudioManager.playSfx("message.wav"); if (onHelp != null) onHelp.run(); });
+
+        exit.addActionListener(e -> { AudioManager.playSfx("button.wav"); if (onExit != null) onExit.run(); });
+
         installKeyBindings();
     }
 
     public void setOnPlay(Runnable r) { this.onPlay = r; }
     public void setOnHistory(Runnable r) { this.onHistory = r; }
     public void setOnQuestions(Runnable r) { this.onQuestions = r; }
+    public void setOnSettings(Runnable r) { this.onSettings = r; }
+    public void setOnHelp(Runnable r) { this.onHelp = r; }
     public void setOnExit(Runnable r) { this.onExit = r; }
 
     @Override
     public void addNotify() {
         super.addNotify();
-        requestFocusInWindow();
+        SwingUtilities.invokeLater(() -> {
+            AudioManager.ensureMusic(MENU_MUSIC, true);
+            requestFocusInWindow();
+        });
     }
+
 
     private void installKeyBindings() {
         int condition = JComponent.WHEN_IN_FOCUSED_WINDOW;
@@ -112,60 +130,80 @@ public class HomePanel extends JPanel {
 
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "play");
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "play");
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "help");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()), "settings");
+
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "exit");
 
         am.put("play", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) {
-                if (onPlay != null) onPlay.run();
-            }
+            @Override public void actionPerformed(ActionEvent e) { if (onPlay != null) onPlay.run(); }
         });
+
+        am.put("help", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { if (onHelp != null) onHelp.run(); }
+        });
+
+        am.put("settings", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { if (onSettings != null) onSettings.run(); }
+        });
+
         am.put("exit", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) {
-                if (onExit != null) onExit.run();
-            }
+            @Override public void actionPerformed(ActionEvent e) { if (onExit != null) onExit.run(); }
         });
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
+    // ----------------- visuals -----------------
 
-        Graphics2D g2 = (Graphics2D) g.create();
+    private JPanel glassCard() {
+        JPanel p = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // ✅ Same subtle readability overlay as Splash
-        g2.setComposite(AlphaComposite.SrcOver.derive(0.12f));
-        g2.setColor(Color.BLACK);
-        g2.fillRect(0, 0, getWidth(), getHeight());
+                int arc = 22;
+                int w = getWidth();
+                int h = getHeight();
 
-        g2.dispose();
+                g2.setColor(new Color(0, 0, 0, 70));
+                g2.fillRoundRect(6, 6, w - 6, h - 6, arc, arc);
+
+                g2.setColor(new Color(0, 0, 0, 160));
+                g2.fillRoundRect(0, 0, w - 6, h - 6, arc, arc);
+
+                g2.setColor(new Color(255, 255, 255, 55));
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawRoundRect(1, 1, w - 8, h - 8, arc, arc);
+
+                g2.dispose();
+            }
+        };
+
+        p.setOpaque(false);
+        p.setBorder(new EmptyBorder(18, 26, 18, 26));
+        return p;
     }
 
     private ImageIcon loadGif(String path) {
         URL url = getClass().getResource(path);
         if (url == null) {
-            System.err.println("❌ Home GIF not found: " + path);
+            System.err.println("Home GIF not found: " + path);
             return new ImageIcon(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB));
         }
         return new ImageIcon(url);
     }
 
-    // --- Background that covers the whole window (same as Splash) ---
-    private static class GifBackgroundPanel extends JPanel {
+    public static class GifBackgroundPanel extends JPanel {
         private final Image gif;
+        GifBackgroundPanel(Image gif) { this.gif = gif; setOpaque(true); }
 
-        GifBackgroundPanel(Image gif) {
-            this.gif = gif;
-            setOpaque(true);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
+        @Override protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             if (gif == null) return;
 
             int w = getWidth();
             int h = getHeight();
-
             int imgW = gif.getWidth(this);
             int imgH = gif.getHeight(this);
             if (imgW <= 0 || imgH <= 0) return;
@@ -176,44 +214,18 @@ public class HomePanel extends JPanel {
             int x = (w - drawW) / 2;
             int y = (h - drawH) / 2;
 
-            g.drawImage(gif, x, y, drawW, drawH, this);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2.drawImage(gif, x, y, drawW, drawH, this);
+
+            g2.setComposite(AlphaComposite.SrcOver.derive(0.12f));
+            g2.setColor(Color.BLACK);
+            g2.fillRect(0, 0, w, h);
+
+            g2.dispose();
         }
     }
 
-    // --- Glass card (COPY from Splash) ---
-    private JPanel glassCard() {
-        JPanel p = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                int arc = 22;
-
-                // shadow
-                g2.setColor(new Color(0, 0, 0, 70));
-                g2.fillRoundRect(6, 6, getWidth() - 6, getHeight() - 6, arc, arc);
-
-                // glass
-                g2.setColor(new Color(0, 0, 0, 110));
-                g2.fillRoundRect(0, 0, getWidth() - 6, getHeight() - 6, arc, arc);
-
-                // border highlight
-                g2.setColor(new Color(255, 255, 255, 55));
-                g2.setStroke(new BasicStroke(2f));
-                g2.drawRoundRect(1, 1, getWidth() - 8, getHeight() - 8, arc, arc);
-
-                g2.dispose();
-            }
-        };
-
-        p.setOpaque(false);
-        p.setBorder(BorderFactory.createEmptyBorder(20, 34, 20, 34));
-        return p;
-    }
-
-    // --- Title with outline (COPY from Splash style) ---
     private static class OutlineLabel extends JComponent {
         private final String text;
         private final Font font;
@@ -230,16 +242,12 @@ public class HomePanel extends JPanel {
             setOpaque(false);
         }
 
-        @Override
-        public Dimension getPreferredSize() {
+        @Override public Dimension getPreferredSize() {
             FontMetrics fm = getFontMetrics(font);
-            int w = fm.stringWidth(text) + 24;
-            int h = fm.getHeight() + 18;
-            return new Dimension(w, h);
+            return new Dimension(fm.stringWidth(text) + 24, fm.getHeight() + 18);
         }
 
-        @Override
-        protected void paintComponent(Graphics g) {
+        @Override protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             g2.setFont(font);
@@ -258,12 +266,10 @@ public class HomePanel extends JPanel {
 
             g2.setColor(fill);
             g2.drawString(text, x, y);
-
             g2.dispose();
         }
     }
 
-    // --- Smooth button (COPY from Splash style) ---
     private static class SmoothButton extends JButton {
         SmoothButton(String text) {
             super(text);
@@ -275,34 +281,29 @@ public class HomePanel extends JPanel {
             setFont(new Font("SansSerif", Font.BOLD, 16));
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
+            setRolloverEnabled(true);
         }
 
-        @Override
-        public Dimension getMaximumSize() {
+        @Override public Dimension getMaximumSize() {
             Dimension ps = getPreferredSize();
             return new Dimension(340, ps.height);
         }
 
-        @Override
-        protected void paintComponent(Graphics g) {
+        @Override protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             boolean hover = getModel().isRollover();
             boolean press = getModel().isPressed();
-
             int arc = 16;
 
-            // shadow
             g2.setColor(new Color(0, 0, 0, 70));
             g2.fillRoundRect(4, 5, getWidth() - 8, getHeight() - 8, arc, arc);
 
-            // base
             g2.setColor(hover ? new Color(30, 30, 30, 190) : new Color(20, 20, 20, 170));
             if (press) g2.setColor(new Color(15, 15, 15, 210));
             g2.fillRoundRect(0, 0, getWidth() - 8, getHeight() - 8, arc, arc);
 
-            // border
             g2.setColor(new Color(255, 255, 255, 55));
             g2.setStroke(new BasicStroke(2f));
             g2.drawRoundRect(1, 1, getWidth() - 10, getHeight() - 10, arc, arc);
