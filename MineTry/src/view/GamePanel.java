@@ -82,12 +82,6 @@ public class GamePanel extends JPanel {
     public GamePanel(Game game) {
         this(game, null, null);
     }
-    @Override
-    public void addNotify() {
-        super.addNotify();
-        // no separate in-game music yet, so stop menu loop
-        AudioManager.stopMusic();
-    }
 
 
     // --- Listener hooks for controller ---

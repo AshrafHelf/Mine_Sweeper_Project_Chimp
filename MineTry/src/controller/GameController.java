@@ -5,18 +5,18 @@ import model.Cell;
 import model.Game;
 import model.Question;
 import model.QuestionService;
+import view.AudioManager;
 import view.GameOverDialog;
 import view.GamePanel;
 import view.MainWindow;
 import view.QuestionDialog;
 
 import javax.swing.*;
+import java.awt.*;
 
 import enums.Difficulty;
 import enums.GameState;
 import enums.QuestionLevel;
-
-import java.awt.*;
 
 public class GameController {
 
@@ -28,7 +28,7 @@ public class GameController {
 
     private final GameObserver uiObserver;
 
-    // Prevent double game-over dialog
+    // Prevent double game-over dialog / double win-lose sound
     private boolean gameOverShown = false;
 
     // Prevent “ghost controller” reacting after restart/back
@@ -46,9 +46,8 @@ public class GameController {
         this.window = window;
         this.questionService = questionService;
 
-        // Observer reacts only to GAME OVER (and will be ignored if disposed)
+        // Observer reacts only to GAME OVER (ignored if disposed)
         this.uiObserver = g -> showGameOverIfNeeded();
-
         this.engine.addObserver(this.uiObserver);
 
         wire();
@@ -57,8 +56,15 @@ public class GameController {
     private void wire() {
 
         // Back / Restart
-        view.onBackToMenu(this::requestBackToMenu);
-        view.onRestart(this::requestRestart);
+        view.onBackToMenu(() -> {
+            AudioManager.playSfx("button.wav");
+            requestBackToMenu();
+        });
+
+        view.onRestart(() -> {
+            AudioManager.playSfx("button.wav");
+            requestRestart();
+        });
 
         // ==========================
         // LEFT CLICK = reveal/activate
@@ -75,10 +81,19 @@ public class GameController {
 
             // ---- FIRST CLICK: not revealed yet → normal reveal in engine ----
             if (!cell.isRevealed()) {
+
+                // Play reveal sound immediately (UX feels responsive)
+                AudioManager.playSfx("revealcell.wav");
+
+                // Reveal action
                 engine.reveal(game, c, r);
 
-                // ✅ revealing (including cascade) ends the turn
-                if (game.getState() == GameState.RUNNING) {
+                // Best-effort mine detection: if game went OVER after reveal, likely a mine chain or loss
+                // (If you have a cleaner API like cell.isMine() or cell.getType()==MINE, use it instead)
+                if (game.getState() == GameState.OVER) {
+                    // We'll play win/lose in showGameOverIfNeeded() exactly once.
+                } else {
+                    // Turn ends after reveal (including cascade)
                     game.swapTurn();
                 }
             }
@@ -95,11 +110,25 @@ public class GameController {
                 switch (cell.getType()) {
 
                     case SURPRISE -> {
+                        // Surprise activation
                         String msg = engine.activateSurprise(game, c, r);
 
-                        if (msg != null) view.pushEvent(msg);
+                        // Sound feedback
+                        // If your message contains positive keywords, play "bonus", otherwise message sound.
+                        if (msg != null) {
+                            String m = msg.toLowerCase();
+                            if (m.contains("bonus") || m.contains("+") || m.contains("gain") || m.contains("life")
+                                    || m.contains("lives") || m.contains("score")) {
+                                AudioManager.playSfx("bonus.wav");
+                            } else {
+                                AudioManager.playSfx("message.wav");
+                            }
+                            view.pushEvent(msg);
+                        } else {
+                            AudioManager.playSfx("message.wav");
+                        }
 
-                        // Optional popup (keep if you like)
+                        // Optional popup
                         if (msg != null && window != null) {
                             JOptionPane.showMessageDialog(
                                     window,
@@ -113,6 +142,8 @@ public class GameController {
                     }
 
                     case QUESTION -> {
+                        AudioManager.playSfx("message.wav"); // opening question dialog feels nice
+
                         QuestionLevel level = randomQuestionLevel();
 
                         var maybeQ = questionService.random(level);
@@ -134,11 +165,15 @@ public class GameController {
                         // user cancelled → don't use tile, don't change turn
                         if (correct == null) break;
 
+                        // Apply question outcome
                         String msg = engine.activateQuestion(game, cell, q.getLevel(), correct);
+
+                        // Sound feedback for correctness
+                        AudioManager.playSfx(Boolean.TRUE.equals(correct) ? "correct.wav" : "error.wav");
 
                         if (msg != null) view.pushEvent(msg);
 
-                        // Optional popup (keep if you like)
+                        // Optional popup
                         if (msg != null && window != null) {
                             JOptionPane.showMessageDialog(
                                     window,
@@ -168,6 +203,8 @@ public class GameController {
             if (disposed) return;
             if (game.getState() != GameState.RUNNING) return;
 
+            AudioManager.playSfx("button.wav"); // simple feedback for flagging
+
             engine.toggleFlag(game, c, r);
             view.refreshFromModel();
             showGameOverIfNeeded();
@@ -195,7 +232,7 @@ public class GameController {
     private void requestRestart() {
         if (window == null) return;
 
-        // Kill this controller so it won't fire game-over again or react
+        // Kill this controller so it won't react after restart/back
         disposeController();
 
         Difficulty diff = game.getDifficulty();
@@ -205,7 +242,7 @@ public class GameController {
         Game newGame = engine.newGame(diff, p1, p2);
         GamePanel newPanel = window.showGame(newGame);
 
-        // New controller instance starts clean (gameOverShown=false, disposed=false)
+        // New controller instance starts clean
         new GameController(newPanel, engine, newGame, window, questionService);
     }
 
@@ -214,11 +251,11 @@ public class GameController {
         if (disposed) return;
         disposed = true;
 
-        // VERY important: remove observer so old controller doesn't react after restart/back
+        // IMPORTANT: remove observer so old controller doesn't react after restart/back
         try {
             engine.removeObserver(uiObserver);
         } catch (Exception ignored) {
-            // If your engine doesn't support removeObserver, tell me and I’ll give an alternative fix
+     
         }
     }
 
@@ -229,18 +266,21 @@ public class GameController {
         if (disposed) return;
         if (game.getState() != GameState.OVER) return;
 
-        // Prevent showing twice (Board A + Board B, multiple ticks, etc.)
+        // Prevent showing twice
         if (gameOverShown) return;
         gameOverShown = true;
 
         boolean won = game.isWon();
         int finalScore = game.getTeamScore();
 
+        // Play win/lose sound ONCE here (best place)
+        AudioManager.playSfx(won ? "win.wav" : "lose.wav");
+
         Window w = SwingUtilities.getWindowAncestor(view);
         JFrame owner = (w instanceof JFrame) ? (JFrame) w : null;
 
         SwingUtilities.invokeLater(() -> {
-            if (disposed) return; // safety
+            if (disposed) return;
             GameOverDialog dlg = new GameOverDialog(owner, won, finalScore);
             dlg.setVisible(true);
         });

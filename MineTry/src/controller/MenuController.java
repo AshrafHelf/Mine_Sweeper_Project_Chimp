@@ -41,8 +41,6 @@ public class MenuController {
 
             Game game = engine.newGame(difficulty, p1, p2);
 
-            // stop menu music before entering gameplay (no in-game track yet)
-            AudioManager.stopMusic();
 
             GamePanel panel = view.showGame(game);
 

@@ -30,12 +30,16 @@ public class MainApp {
 
             MainWindow mainWindow = new MainWindow();
 
-            // IMPORTANT: release audio resources on exit
-            mainWindow.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override public void windowClosing(java.awt.event.WindowEvent e) {
-                    AudioManager.shutdown();
-                }
-            });
+         // start menu music once (and keep it across screens)
+         AudioManager.ensureMusic("menu_music.wav", true);
+
+         // IMPORTANT: release audio resources on exit
+         mainWindow.addWindowListener(new java.awt.event.WindowAdapter() {
+             @Override public void windowClosing(java.awt.event.WindowEvent e) {
+                 AudioManager.shutdown();
+             }
+         });
+
 
             new MenuController(mainWindow, gameEngine, questionService, historyService);
             mainWindow.setVisible(true);
