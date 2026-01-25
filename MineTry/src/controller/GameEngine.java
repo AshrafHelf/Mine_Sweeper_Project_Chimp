@@ -367,22 +367,19 @@ public class GameEngine {
             return null;
         }
 
-        // ✅ Pay activation cost HERE
-        int activationCost = switch (game.getDifficulty()) {
-            case EASY -> 5;
-            case MEDIUM -> 8;
-            case HARD -> 12;
-        };
-        game.addToTeamScore(-activationCost);
+        // ✅ Pay activation cost (same helper as Question)
+        int cost = activationCostFor(game.getDifficulty());
+        game.addToTeamScore(-cost);
 
         // apply effect (good/bad) and build message
-        String msg = applySurpriseEffect(game, activationCost);
+        String msg = applySurpriseEffect(game, cost);
 
         // mark as USED so it can't be activated again
         cell.setUsedSpecial(true);
 
-        return msg;
+        return "Activation cost: -" + cost + " pts\n" + msg;
     }
+
 
 
 
@@ -401,7 +398,7 @@ public class GameEngine {
         };
 
         RandomGenerator rng = BoardGenerator.current();
-        boolean good = rng.nextBoolean(); // 50-50 good / bad
+        boolean good = rng.nextBoolean();
 
         int lives = game.getTeamLives();
         int heartsDelta;
@@ -411,12 +408,8 @@ public class GameEngine {
             heartsDelta = +1;
             pointsDelta = surprisePoints;
 
-            if (lives < 10) {
-                lives += 1;
-            } else {
-                // already max lives -> extra bonus points
-                pointsDelta += 5;
-            }
+            if (lives < 10) lives += 1;
+            else pointsDelta += 5;
 
             game.setTeamLives(lives);
             game.addToTeamScore(pointsDelta);
@@ -429,21 +422,19 @@ public class GameEngine {
             game.setTeamLives(lives);
             game.addToTeamScore(pointsDelta);
 
-            if (lives <= 0) {
-                finishGame(game, false);
-            }
+            if (lives <= 0) finishGame(game, false);
         }
 
         int netPoints = -activationCost + pointsDelta;
 
         StringBuilder sb = new StringBuilder();
         sb.append(good ? "Good surprise!\n" : "Bad surprise!\n");
-        sb.append("Activation cost: -").append(activationCost).append(" pts\n");
         sb.append(netPoints >= 0 ? "+" : "").append(netPoints).append(" pts total\n");
         sb.append(heartsDelta > 0 ? "+" : "").append(heartsDelta).append(" \u2665");
 
         return sb.toString();
     }
+
 
 
 
